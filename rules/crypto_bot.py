@@ -267,6 +267,13 @@ def manage_perp(p, pos, t, notes, dv):
     if hrs >= TIME_STOP["core"] and pos["maxR"] < 1 and not pos.get("half"):
         close_perp(p, pos, lp, int(t.timestamp()), f"time stop: not +1R within {TIME_STOP['core']}h", notes); return False
     return True
+def perp_precheck(side, entry, stop, qty=None, contracts=None, cs=None, tol=1e-9):
+    """Pre-trade guard: stop on the correct side of entry, and qty == contracts x contract size. Returns a block reason or None."""
+    if stop <= 0 or (side == "long" and not stop < entry) or (side == "short" and not stop > entry):
+        return f"BLOCKED invalid stop: {side} entry {r2(entry)} stop {r2(stop)} (wrong side)"
+    if qty is not None and abs(qty - contracts * cs) > tol * max(1.0, abs(qty)):
+        return f"BLOCKED size mismatch: qty {qty} != {contracts} x {cs}"
+    return None
 def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
     """Returns a skip reason, or True when a perp position was opened."""
     side = "short" if short else "long"; sd = -1 if short else 1; m = PERP[s]; d = dv.get(s); g = p.get("risk", {})
@@ -278,6 +285,8 @@ def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
     if short and f8 <= FUND_SHORT_MIN: return f"funding {f8*100:+.3f}%/8h <= -0.05% (crowded shorts)"
     if short and sum(o.get("side") == "short" for o in p["open"]) >= MAX_SHORTS: return f"max {MAX_SHORTS} shorts open"
     entry = price(s) * (1 + sd * SLIP); a = sg["a"]; stop = entry - sd * 1.5 * a
+    bad = perp_precheck(side, entry, stop)
+    if bad: notes.append(f"FLAG [perp {side}] {s}: {bad}"); return bad
     lev = pick_lev(side, entry, stop, m["mmr"])
     if not lev: return "liquidation buffer: cannot keep liq >= 3x stop distance even at 1x"
     eq = equity(); mult = (0.5 if half_all else 1) * (0.5 if (not short and regime == "risk-off") else 1)
@@ -294,6 +303,8 @@ def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
         one = m["cs"] * abs(entry - stop)
         return f"1 contract ({m['cs']} {s}) risks ${one:.2f} / ${m['cs']*entry:,.0f} notional; exceeds risk ${min(risk, rroom):.2f}, exposure or cash limits"
     qty = n * m["cs"]; notl = qty * entry; margin = notl / lev; fee = perp_fee(entry, qty, m["cs"])
+    bad = perp_precheck(side, entry, stop, qty, n, m["cs"])
+    if bad: notes.append(f"FLAG [perp {side}] {s}: {bad}"); return bad
     p["sleeves"]["core"]["cash"] -= margin + fee; sync_cash(p)
     liq = liq_price(side, entry, lev, m["mmr"]); target = entry + sd * 2 * abs(entry - stop); last = sg["last"]
     thesis = (f"[CORE perp {side.upper()} {lev}x isolated, {m['pid']} Coinbase Derivatives] {sg['setup']}: 1h close {r2(last['c'])} "
