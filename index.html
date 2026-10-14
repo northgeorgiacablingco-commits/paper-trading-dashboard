@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paper Trading Dashboard</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0d1117;color:#c9d1d9;font:15px/1.5 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;padding:16px}
+.wrap{max-width:1100px;margin:auto}header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px}
+h1{font-size:1.5rem;margin:0;color:#f0f6fc}.badge{background:#d29922;color:#0d1117;font-weight:700;font-size:.75rem;padding:3px 8px;border-radius:12px}
+#updated{color:#8b949e;font-size:.85rem;margin-left:auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.card,section{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px}
+.label{color:#8b949e;font-size:.8rem;text-transform:uppercase}.val{font-size:1.5rem;font-weight:600;color:#f0f6fc}.sub{color:#8b949e;font-size:.85rem}
+.pos{color:#3fb950!important}.neg{color:#f85149!important}section{margin-bottom:20px}h2{font-size:1.1rem;margin:0 0 10px;color:#f0f6fc}
+.tbl{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:640px}th,td{text-align:left;padding:8px;border-bottom:1px solid #30363d}th{color:#8b949e;font-weight:600}
+.empty{text-align:center;color:#8b949e;font-style:italic}ul{margin:0;padding-left:20px}li{margin:4px 0}b{color:#f0f6fc}
+</style></head><body><div class="wrap">
+<header><h1>Paper Trading Dashboard</h1><span class="badge">PAPER</span><span id="updated">updated --</span></header>
+<div class="cards">
+<div class="card"><div class="label">Balance</div><div class="val" id="balance">$10,000.00</div><div class="sub">Start $10,000.00</div></div>
+<div class="card"><div class="label">Today's P&amp;L</div><div class="val" id="pnl">$0.00</div><div class="sub" id="pnlSub">No trades yet</div></div>
+<div class="card"><div class="label">Open Position</div><div class="val" id="openPos">None</div><div class="sub" id="openSub">Waiting for range break</div></div>
+<div class="card"><div class="label">Trades Today</div><div class="val" id="count">0</div><div class="sub" id="winrate">Win rate n/a</div></div>
+</div>
+<section><h2>Journal</h2><div class="tbl"><table><thead><tr><th>Time</th><th>Ticker</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Thesis</th></tr></thead>
+<tbody id="rows"><tr><td colspan="7" class="empty">No trades logged yet.</td></tr></tbody></table></div></section>
+<section><h2>Strategy Rules (breakout)</h2><ul>
+<li><b>Entry</b> = price breaks above prior day's high with above-average volume</li>
+<li><b>Stop loss</b> = below breakout candle's low, max 1% risk per trade</li>
+<li><b>Target</b> = 2:1 reward-to-risk minimum</li>
+<li><b>Max trades</b> = 3 per day, no revenge trading</li>
+<li><b>Journal</b> = every trade gets a written thesis before entry</li></ul></section>
+</div>
+<script>
+/* HOW TO ADD TRADES:
+   Add an object to the `trades` array below, then reload the page. Example:
+   {time:"10:05", ticker:"SPY", side:"Long", entry:779.10, exit:781.30, pnl:26.40, thesis:"Broke prior-day high on 2x volume"}
+   Use exit:null and pnl:null for a trade that's still open. It shows in "Open Position".
+   You can also call addTrade({...}) from the browser console. */
+const START_BALANCE = 10000;
+const trades = [];
+const $ = id => document.getElementById(id);
+const money = n => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function stamp(){ $("updated").textContent = "updated " + new Date().toLocaleTimeString(); }
+function render(){
+  const closed = trades.filter(t => t.exit != null && t.pnl != null);
+  const open = trades.filter(t => t.exit == null);
+  const total = closed.reduce((s,t) => s + Number(t.pnl), 0);
+  const wins = closed.filter(t => t.pnl > 0).length;
+  $("balance").textContent = money(START_BALANCE + total);
+  $("balance").className = "val" + (total > 0 ? " pos" : total < 0 ? " neg" : "");
+  $("pnl").textContent = money(total);
+  $("pnl").className = "val" + (total > 0 ? " pos" : total < 0 ? " neg" : "");
+  $("pnlSub").textContent = trades.length ? closed.length + " closed" : "No trades yet";
+  $("openPos").textContent = open.length ? open[0].side + " " + open[0].ticker : "None";
+  $("openSub").textContent = open.length ? "Entry " + open[0].entry : "Waiting for range break";
+  $("count").textContent = trades.length;
+  $("winrate").textContent = "Win rate " + (closed.length ? Math.round(wins / closed.length * 100) + "%" : "n/a");
+  $("rows").innerHTML = trades.length ? trades.map(t => {
+    const c = t.pnl > 0 ? "pos" : t.pnl < 0 ? "neg" : "";
+    return `<tr><td>${esc(t.time)}</td><td>${esc(t.ticker)}</td><td>${esc(t.side)}</td><td>${esc(t.entry)}</td><td>${t.exit==null?"open":esc(t.exit)}</td><td class="${c}">${t.pnl==null?"—":money(Number(t.pnl))}</td><td>${esc(t.thesis)}</td></tr>`;
+  }).join("") : '<tr><td colspan="7" class="empty">No trades logged yet.</td></tr>';
+  stamp();
+}
+function addTrade(t){ trades.push(t); render(); }
+render(); setInterval(stamp, 1000);
+</script></body></html>
