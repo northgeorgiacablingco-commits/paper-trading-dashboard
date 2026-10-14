@@ -14,15 +14,26 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Skip if another run just updated data (avoid double-processing)
+        id: fresh
+        run: |
+          git fetch -q origin main && git reset -q --hard origin/main
+          age=$(( $(date +%s) - $(git log -1 --format=%ct -- data/crypto_portfolio.json) ))
+          echo "data age ${age}s"
+          if [ "$age" -lt 180 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Fresh data (<180s), skipping"; fi
       - uses: actions/setup-python@v5
+        if: steps.fresh.outputs.skip != '1'
         with:
           python-version: '3.12'
       - run: python scripts/update_data.py
+        if: steps.fresh.outputs.skip != '1'
       - name: Crypto paper bot
+        if: steps.fresh.outputs.skip != '1'
         run: python rules/crypto_bot.py
       - name: Commit if changed
+        if: steps.fresh.outputs.skip != '1'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898780+github-actions[bot]@users.noreply.github.com"
           git add data/
-          if git diff --cached --quiet; then echo "No changes"; else git commit -m "data: auto-update $(date -u +%FT%TZ)" && (git push || (git pull --rebase && git push)); fi
+          if git diff --cached --quiet; then echo "No changes"; else git commit -m "data: auto-update $(date -u +%FT%TZ)" && (git push || echo "Push rejected: another run updated data first; discarding this run (no merge)"); fi
