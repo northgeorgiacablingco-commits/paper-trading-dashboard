@@ -11,6 +11,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,4 +25,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898780+github-actions[bot]@users.noreply.github.com"
           git add data/
-          if git diff --cached --quiet; then echo "No changes"; else git commit -m "data: auto-update $(date -u +%FT%TZ)" && git push; fi
+          if git diff --cached --quiet; then echo "No changes"; else git commit -m "data: auto-update $(date -u +%FT%TZ)" && (git push || (git pull --rebase && git push)); fi
