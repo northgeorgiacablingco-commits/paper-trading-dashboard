@@ -1,0 +1,23 @@
+/* Live layer: ticker, breaking bar, animations */
+body{background:linear-gradient(-45deg,#0d1117,#111a2b,#0d1117,#16112b);background-size:400% 400%;animation:bgshift 25s ease infinite;padding-bottom:78px!important}
+@keyframes bgshift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.card{transition:box-shadow .4s,transform .2s;box-shadow:0 0 0 rgba(88,166,255,0)}
+.card:hover{box-shadow:0 0 18px rgba(88,166,255,.25);transform:translateY(-1px)}
+.cards .card{box-shadow:0 0 14px rgba(63,185,80,.12);animation:glow 4s ease-in-out infinite alternate}
+@keyframes glow{from{box-shadow:0 0 6px rgba(88,166,255,.10)}to{box-shadow:0 0 20px rgba(88,166,255,.28)}}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3fb950;margin-right:6px;vertical-align:middle;animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,185,80,.7)}70%{box-shadow:0 0 0 8px rgba(63,185,80,0)}100%{box-shadow:0 0 0 0 rgba(63,185,80,0)}}
+.flash-up{animation:fu 1.2s}.flash-down{animation:fd 1.2s}
+@keyframes fu{0%{background:rgba(63,185,80,.45)}100%{background:transparent}}@keyframes fd{0%{background:rgba(248,81,73,.45)}100%{background:transparent}}
+.page.on{animation:fadein .45s ease}@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#liveBars{position:fixed;left:0;right:0;bottom:0;z-index:50;font:600 13px/1 -apple-system,Segoe UI,Helvetica,Arial,sans-serif}
+.lb{display:flex;align-items:center;overflow:hidden;white-space:nowrap;height:34px;border-top:1px solid #30363d}
+.lb .tag{flex:0 0 auto;padding:0 10px;height:100%;display:flex;align-items:center;z-index:2;letter-spacing:.05em}
+.lb .track{display:inline-block;padding-left:12px;animation:scroll var(--dur,60s) linear infinite}
+.lb:hover .track{animation-play-state:paused}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+#breaking{background:#1a0d0f}#breaking .tag{background:#f85149;color:#fff}#breaking a{color:#f0f6fc;text-decoration:none;margin-right:40px}#breaking a:before{content:"● ";color:#f85149}
+#ticker{background:#0b0f14;height:38px}#ticker .tag{background:#1f6feb;color:#fff}
+.tk{display:inline-block;margin-right:28px;color:#c9d1d9;padding:3px 4px;border-radius:4px}.tk b{color:#f0f6fc;margin-right:6px}.tk .up{color:#3fb950}.tk .dn{color:#f85149}
+@media(max-width:600px){.lb{font-size:12px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:0s!important}}

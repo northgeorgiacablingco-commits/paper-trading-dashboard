@@ -13,7 +13,7 @@ h2{color:#f0f6fc;font-size:1.15rem;margin:0 0 10px}h3,h4{color:#f0f6fc}a{color:#
 table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left;padding:7px;border-bottom:1px solid #30363d;vertical-align:top}th{color:#8b949e}
 .empty{text-align:center;color:#8b949e;font-style:italic}.chart{position:relative;height:280px}.md li{margin:3px 0}.md{word-wrap:break-word}
 .v-RedFlags{color:#f85149}.v-PartlyVerified{color:#d29922}.v-Unverifiable{color:#8b949e}.v-Verified{color:#3fb950}.note{color:#8b949e;font-size:.8rem}
-.ext{color:#d29922!important}select{background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px}.live{color:#3fb950}.stale{color:#d29922}</style></head><body>
+.ext{color:#d29922!important}select{background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px}.live{color:#3fb950}.stale{color:#d29922}</style><link rel="stylesheet" href="../assets/live.css"></head><body>
 <header><h1>Crypto Trading Hub</h1><span class="badge">PAPER</span><span id="upd"></span></header><nav><a class="ext" href="../">← Stocks Hub</a><a href="#overview" data-p="overview">Overview</a><a href="#charts" data-p="charts">Charts</a><a href="#watchlist" data-p="watchlist">Watchlist & Trader Checks</a><a href="#headlines" data-p="headlines">Headlines</a><a href="#scout" data-p="scout">Daily Scout</a><a href="#journal" data-p="journal">Paper Journal</a><a href="#research" data-p="research">Research</a><a href="#files" data-p="files">Files</a></nav><main>
 <section class="page" id="overview"><div class="card"><h2>Live Prices</h2><p class="note" id="srcN"></p><table><thead><tr><th>Coin</th><th>Price</th><th>24h</th><th>Mkt cap</th><th>Volume 24h</th></tr></thead><tbody id="pT"></tbody></table></div>
 <div class="card note">Prices come from the CoinGecko public API and refresh every 60s. If the API is unreachable, the page shows an embedded snapshot. Paper trading and research only. Not financial advice.</div></section>
@@ -151,4 +151,4 @@ function draw(p){if(!window.Chart||drawn[p])return;drawn[p]=1;
   new Chart($("vC"),{type:"doughnut",data:{labels:Object.keys(c),datasets:[{data:Object.values(c),backgroundColor:Object.keys(c).map(k=>col[k])}]},options:{maintainAspectRatio:false}});}}
 function show(){const p=location.hash.slice(1)||"overview";document.querySelectorAll(".page").forEach(s=>s.classList.toggle("on",s.id===p));document.querySelectorAll("nav a[data-p]").forEach(a=>a.classList.toggle("on",a.dataset.p===p));draw(p);}
 addEventListener("hashchange",show);show();
-</script></body></html>
+</script><script src="../assets/live.js" data-base="../"></script></body></html>

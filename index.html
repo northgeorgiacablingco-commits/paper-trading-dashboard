@@ -14,7 +14,7 @@ h2{color:#f0f6fc;font-size:1.15rem;margin:0 0 10px}h3,h4{color:#f0f6fc}a{color:#
 table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left;padding:7px;border-bottom:1px solid #30363d;vertical-align:top}th{color:#8b949e}
 .empty{text-align:center;color:#8b949e;font-style:italic}.chart{position:relative;height:280px}.md li{margin:3px 0}.md{word-wrap:break-word}
 .v-RedFlags{color:#f85149}.v-PartlyVerified{color:#d29922}.v-Unverifiable{color:#8b949e}.v-Verified{color:#3fb950}.note{color:#8b949e;font-size:.8rem}
-</style></head><body>
+</style><link rel="stylesheet" href="./assets/live.css"></head><body>
 <header><h1>Paper Trading Hub</h1><span class="badge">PAPER</span><span id="upd"></span></header>
 <nav><a href="#overview" data-p="overview">Overview</a><a href="#market" data-p="market">Market</a><a href="#headlines" data-p="headlines">Headlines</a><a href="#journal" data-p="journal">Journal</a><a href="#rules" data-p="rules">Strategy Rules</a><a href="#research" data-p="research">Research</a><a href="#watchlist" data-p="watchlist">Watchlist & Verification</a><a href="#scout" data-p="scout">Daily Scout</a><a href="#files" data-p="files">Files</a><a href="crypto/" style="color:#d29922">Crypto</a></nav><main>
 <section class="page" id="overview"><div class="cards">
@@ -219,4 +219,4 @@ function show(){const p=(location.hash.slice(1)||"overview");document.querySelec
  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.p===p));draw(p);}
 window.addEventListener("hashchange",show);show();
 const tick=()=>$("upd").textContent="updated "+new Date().toLocaleTimeString();tick();setInterval(tick,1000);
-</script></body></html>
+</script><script src="./assets/live.js" data-base="./"></script></body></html>
