@@ -54,3 +54,4 @@ def write(path, obj):
 now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 write("data/market.json", dict(generated_at=now, markets=markets))
 write("data/headlines.json", dict(generated_at=now, headlines=heads))
+write("data/crypto_headlines.json", dict(generated_at=now, headlines=[h for h in heads if h["source"] in ("CoinDesk", "Cointelegraph")]))

@@ -30,7 +30,7 @@ function renderBreaking(){if(!heads.length)return;const tr=document.getElementBy
 async function j(u){const r=await fetch(u+(u.includes("?")?"&":"?")+"t="+Date.now(),{cache:"no-store"});if(!r.ok)throw r.status;return r.json();}
 async function refresh(){
   try{const m=await j(BASE+"data/market.json");genAt=m.generated_at;m.markets.forEach(x=>data[x.symbol]=x);}catch(e){}
-  try{const h=await j(BASE+"data/headlines.json");heads=h.headlines||[];}catch(e){}
+  try{const h=await j(BASE+(location.pathname.includes("/crypto/")?"data/crypto_headlines.json":"data/headlines.json"));heads=h.headlines||[];}catch(e){}
   try{const c=await j("https://api.coingecko.com/api/v3/simple/price?ids="+Object.keys(CG).join(",")+"&vs_currencies=usd&include_24hr_change=true");
     for(const k in c){const s=CG[k];data[s]=Object.assign({},data[s]||{},{symbol:s,price:c[k].usd,change_pct:c[k].usd_24h_change});}}catch(e){}
   renderTicker();renderBreaking();tickStamp();
@@ -38,8 +38,10 @@ async function refresh(){
 }
 // count-up animation for stat values like "$10,000.00"
 function countUp(el){const t=el.textContent.trim(),m=t.match(/^(-?\$?)([\d,]+(?:\.\d+)?)(.*)$/);if(!m)return;
-  const target=parseFloat(m[2].replace(/,/g,"")),dec=(m[2].split(".")[1]||"").length,t0=performance.now();
-  (function step(now){const k=Math.min(1,(now-t0)/1200),e=1-Math.pow(1-k,3);el.textContent=m[1]+(target*e).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec})+m[3];if(k<1)requestAnimationFrame(step);})(t0);setTimeout(()=>el.textContent=t,1300);}
+  if(document.hidden||navigator.webdriver||/Headless/i.test(navigator.userAgent)){el.textContent=t;return;}
+  const target=parseFloat(m[2].replace(/,/g,"")),dec=(m[2].split(".")[1]||"").length,t0=performance.now(),D=800;
+  (function step(now){const k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3);el.textContent=k>=1?t:m[1]+(target*e).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec})+m[3];if(k<1&&!document.hidden)requestAnimationFrame(step);else el.textContent=t;})(t0);
+  setTimeout(()=>el.textContent=t,D+50);document.addEventListener("visibilitychange",()=>el.textContent=t,{once:true});}
 setTimeout(()=>document.querySelectorAll(".val").forEach(countUp),50);
 if(window.Chart){Chart.defaults.animation={duration:1200,easing:"easeOutQuart"};}
 refresh();setInterval(refresh,60000);setInterval(tickStamp,1000);
