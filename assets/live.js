@@ -43,6 +43,6 @@ function countUp(el){const t=el.textContent.trim(),m=t.match(/^(-?\$?)([\d,]+(?:
   (function step(now){const k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3);el.textContent=k>=1?t:m[1]+(target*e).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec})+m[3];if(k<1&&!document.hidden)requestAnimationFrame(step);else el.textContent=t;})(t0);
   setTimeout(()=>el.textContent=t,D+50);document.addEventListener("visibilitychange",()=>el.textContent=t,{once:true});}
 setTimeout(()=>document.querySelectorAll(".val").forEach(countUp),50);
-if(window.Chart){Chart.defaults.animation={duration:1200,easing:"easeOutQuart"};}
+if(window.Chart){Chart.defaults.animation={duration:500,easing:"easeOutCubic"};}
 refresh();setInterval(refresh,60000);setInterval(tickStamp,1000);
 })();

@@ -15,20 +15,25 @@ markets = []
 for g, n, s in YS:
     try:
         r = json.loads(get(f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(s)}?range=5d&interval=1d"))["chart"]["result"][0]
+        try:
+            rs = json.loads(get(f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(s)}?range=5d&interval=1h"))["chart"]["result"][0]
+            spark = [round(x, 2) for x in rs["indicators"]["quote"][0]["close"] if x is not None][-60:]
+        except Exception:
+            spark = []
         m = r["meta"]; closes = [c for c in r["indicators"]["quote"][0]["close"] if c is not None]
         p = m["regularMarketPrice"]
         # prior close = last daily close before the current session's bar
         prev = closes[-2] if len(closes) >= 2 else m.get("chartPreviousClose")
         if closes and abs(closes[-1] - p) > 1e-9 and len(closes) >= 1: prev = closes[-1] if datetime.fromtimestamp(r["timestamp"][-1], timezone.utc).date() < datetime.fromtimestamp(m["regularMarketTime"], timezone.utc).date() else prev
-        markets.append(dict(group=g, name=n, symbol=s, price=round(p, 2), change=round(p - prev, 2), change_pct=round((p - prev) / prev * 100, 2), as_of=iso(m["regularMarketTime"]), source="Yahoo Finance chart API"))
+        markets.append(dict(group=g, name=n, symbol=s, price=round(p, 2), change=round(p - prev, 2), change_pct=round((p - prev) / prev * 100, 2), as_of=iso(m["regularMarketTime"]), source="Yahoo Finance chart API", spark=spark))
     except Exception as e:
         markets.append(dict(group=g, name=n, symbol=s, price=None, change=None, change_pct=None, as_of=None, source=f"Yahoo unavailable: {e}"))
 try:
-    cg = json.loads(get("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=" + ",".join(i for i, _ in CG) + "&price_change_percentage=24h"))
+    cg = json.loads(get("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=" + ",".join(i for i, _ in CG) + "&price_change_percentage=24h&sparkline=true"))
     by = {c["id"]: c for c in cg}
     for i, sym in CG:
         c = by.get(i)
-        if c: markets.append(dict(group="Crypto", name=c["name"], symbol=sym, price=c["current_price"], change=round(c.get("price_change_24h") or 0, 6), change_pct=round(c.get("price_change_percentage_24h") or 0, 2), market_cap=c.get("market_cap"), volume=c.get("total_volume"), as_of=c.get("last_updated"), source="CoinGecko"))
+        if c: markets.append(dict(group="Crypto", name=c["name"], symbol=sym, price=c["current_price"], change=round(c.get("price_change_24h") or 0, 6), change_pct=round(c.get("price_change_percentage_24h") or 0, 2), market_cap=c.get("market_cap"), volume=c.get("total_volume"), image=c.get("image"), spark=[round(v, 6) for v in (c.get("sparkline_in_7d") or {}).get("price", [])][-60:], as_of=c.get("last_updated"), source="CoinGecko"))
 except Exception as e:
     print("CoinGecko failed:", e)
 FEEDS = [("Yahoo Finance","https://feeds.finance.yahoo.com/rss/2.0/headline?s=%5EGSPC,AAPL,NVDA,TSLA&region=US&lang=en-US"),("CNBC","https://www.cnbc.com/id/100003114/device/rss/rss.html"),
