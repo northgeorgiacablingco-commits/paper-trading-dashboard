@@ -48,3 +48,8 @@ a{color:#79b8ff}
 .tk{font-weight:500;font-variant-numeric:tabular-nums}.tk b{font-weight:700}
 .dot{width:7px!important;height:7px!important}
 @media(max-width:600px){main{padding:14px!important}header{padding:14px 14px 10px!important}h1{font-size:1.1rem!important}.val{font-size:1.35rem!important}.cards{grid-template-columns:1fr 1fr!important;gap:10px!important}.card{padding:14px!important}#liveStamp{width:100%;margin-left:42px!important}}
+.seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;flex:0 0 auto;width:100%;max-width:280px;margin-bottom:6px}
+.seg a{flex:1;text-align:center;padding:8px 14px;border-radius:8px;color:var(--mut);text-decoration:none;font-weight:600;font-size:.9rem;transition:background .15s,color .15s}
+.seg a.on{background:var(--acc);color:#fff;box-shadow:0 2px 10px rgba(47,129,247,.4)}
+.seg a:not(.on):hover{color:var(--txt)}
+header{flex-wrap:wrap}.seg{order:-1;flex-basis:100%}

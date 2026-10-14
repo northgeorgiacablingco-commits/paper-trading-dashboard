@@ -1,4 +1,4 @@
-name: Update market data
+name: Update market data + crypto paper bot
 on:
   schedule:
     - cron: '7,22,37,52 * * * *'
@@ -17,6 +17,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/update_data.py
+      - name: Crypto paper bot
+        run: python rules/crypto_bot.py
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
