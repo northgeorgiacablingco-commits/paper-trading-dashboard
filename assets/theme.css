@@ -53,3 +53,7 @@ a{color:#79b8ff}
 .seg a.on{background:var(--acc);color:#fff;box-shadow:0 2px 10px rgba(47,129,247,.4)}
 .seg a:not(.on):hover{color:var(--txt)}
 header{flex-wrap:wrap}.seg{order:-1;flex-basis:100%}
+/* Toggle: first, full-width, large */
+.seg{max-width:none!important;width:100%;flex-basis:100%;margin:0 0 12px!important;padding:4px!important;border-radius:12px!important}
+.seg a{padding:13px 16px!important;font-size:1.05rem!important;font-weight:700!important;border-radius:9px!important}
+@media(min-width:700px){.seg{max-width:460px!important}}
