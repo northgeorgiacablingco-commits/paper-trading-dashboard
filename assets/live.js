@@ -3,9 +3,9 @@
    - Crypto prices are fetched straight from CoinGecko in the browser (CORS allowed). */
 (function(){
 const BASE=document.currentScript.dataset.base||"./";
-const SYMS=["^GSPC","^DJI","^IXIC","^RUT","BTC","ETH","SOL","XRP","ADA","DOGE","AAPL","MSFT","NVDA","TSLA","GOOGL","AMZN"];
+const SYMS=["^GSPC","^DJI","^IXIC","^RUT","BTC","ETH","SOL","XRP","ADA","DOGE","AVAX","LINK","AAPL","MSFT","NVDA","TSLA","GOOGL","AMZN"];
 const LABEL={"^GSPC":"S&P 500","^DJI":"DOW","^IXIC":"NASDAQ","^RUT":"RUSSELL 2000"};
-const CG={bitcoin:"BTC",ethereum:"ETH",solana:"SOL",ripple:"XRP",cardano:"ADA",dogecoin:"DOGE"};
+const CG={bitcoin:"BTC",ethereum:"ETH",solana:"SOL",ripple:"XRP",cardano:"ADA",dogecoin:"DOGE","avalanche-2":"AVAX",chainlink:"LINK"};let EXTRA=[];
 let data={},heads=[],genAt=null,last={};
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt=n=>n==null?"n/a":n.toLocaleString("en-US",{maximumFractionDigits:n<1?4:2});
@@ -19,7 +19,7 @@ if(hdr&&!stamp){stamp=document.createElement("span");stamp.id="liveStamp";stamp.
 function ago(t){if(!t)return"n/a";const s=Math.max(0,(Date.now()-new Date(t))/1000|0);return s<60?s+"s ago":s<3600?(s/60|0)+"m ago":(s/3600|0)+"h ago";}
 function tickStamp(){if(stamp)stamp.innerHTML='<span class="dot"></span>data updated '+ago(genAt);}
 function renderTicker(){
-  const items=SYMS.map(s=>data[s]).filter(Boolean);
+  const items=SYMS.concat(EXTRA).map(s=>data[s]).filter(Boolean);
   if(!items.length)return;
   const html=items.map(m=>{const up=(m.change_pct||0)>=0;return `<span class="tk" data-s="${esc(m.symbol)}"><b>${esc(LABEL[m.symbol]||m.symbol)}</b>${fmt(m.price)} <span class="${up?"up":"dn"}">${up?"▲":"▼"} ${m.change_pct==null?"":Math.abs(m.change_pct).toFixed(2)+"%"}</span></span>`;}).join("");
   const tr=document.getElementById("tkTrack");tr.innerHTML=html+html;tr.style.setProperty("--dur",Math.max(30,items.length*4)+"s");
@@ -31,6 +31,7 @@ async function j(u){const r=await fetch(u+(u.includes("?")?"&":"?")+"t="+Date.no
 async function refresh(){
   try{const m=await j(BASE+"data/market.json");genAt=m.generated_at;m.markets.forEach(x=>data[x.symbol]=x);}catch(e){}
   try{const h=await j(BASE+(location.pathname.includes("/crypto/")?"data/crypto_headlines.json":"data/headlines.json"));heads=h.headlines||[];}catch(e){}
+  if(location.pathname.includes("/crypto/"))try{const p=await j(BASE+"data/crypto_portfolio.json");EXTRA=((p.scan&&p.scan.active)||[]).slice(0,5).map(a=>{const s="X:"+a.sym;LABEL[s]=a.sym;data[s]={symbol:s,price:a.price,change_pct:a.p24};return s;});}catch(e){}
   try{const c=await j("https://api.coingecko.com/api/v3/simple/price?ids="+Object.keys(CG).join(",")+"&vs_currencies=usd&include_24hr_change=true");
     for(const k in c){const s=CG[k];data[s]=Object.assign({},data[s]||{},{symbol:s,price:c[k].usd,change_pct:c[k].usd_24h_change});}}catch(e){}
   renderTicker();renderBreaking();tickStamp();
