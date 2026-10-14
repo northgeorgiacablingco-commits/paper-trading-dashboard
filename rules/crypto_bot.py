@@ -5,7 +5,7 @@ Filters: 24h volume >= $5M, >= 30 days of daily candles on Coinbase, no stableco
 Ranking: momentum score = 24h% + 0.5 x 7d% + 10 x log2(volume surge), surge = 24h $vol / 30d avg daily $vol.
 Rules on the top candidates (1h, closed candles only): close above EMA20 and EMA50 with EMA20 > EMA50; trigger = fresh
 close above the prior 24h high (BREAKOUT) or an EMA20 pullback bounce (PULLBACK). Stop = entry - 1.5 x ATR(14), target 2R.
-Risk 1% of equity; spot longs 1x; BTC/ETH/SOL/XRP via Coinbase Derivatives US perps (long+short, default 2x, max 3x, isolated), max 3 open, max 5 entries/UTC day, pause after 2 losses/day.
+Risk 1% of equity; spot longs 1x; BTC/ETH/SOL/XRP via Coinbase Derivatives US perps (long+short, default 2x, max 3x, isolated), max 3 open, max 5 entries/UTC day, half size after 2 losses/day, stop after 3, stop at +$300/day; daily SMA50 trend filter for longs; 40% vol-target sizing.
 Costs: fee+slippage 0.1%/side for top-20 market cap, 0.2%/side for smaller caps. Exits use real 1h highs/lows after entry."""
 import json, os, csv, math, time, urllib.request
 from datetime import datetime, timezone
@@ -80,9 +80,43 @@ def universe(notes):
     return out
 from zoneinfo import ZoneInfo
 # ---- Approved playbook (PLAYBOOK.md, approved by Joey 2026-10-14) ----
-CAP = {"core": 2500.0, "alts": 800.0, "meme": 400.0}      # max $ per coin per sleeve
+CAP_PCT = {"core": 0.25, "alts": 0.08, "meme": 0.04}   # max per coin per sleeve as % of CURRENT equity (was $2,500/$800/$400 at $10K) -> compounds
 COIN_MAX, DAILY_STOP, WEEK_DD, HALT_DD = 0.25, 200.0, 0.06, 0.15
 TIME_STOP = {"core": 24, "alts": 24, "meme": 6}             # hours to reach +1R
+# ---- Upgrades approved by Joey 2026-10-14 (toggle via constants) ----
+DAILY_TREND, TREND_SMA = True, 50          # LONG entries only if BTC and coin daily close > 50-day SMA
+VOL_SIZING, VOL_TARGET, VOL_DAYS = True, 0.40, 20   # size <= equity * 40% / coin 20d annualized realized vol
+LOSS_HALF, LOSS_STOP, DAY_PROFIT_STOP = 2, 3, 300.0  # half size after 2 losses/day, stop after 3, stop new trades at +$300/day
+_d1 = {}
+def daily_closed(sym, t):
+    """Closed Coinbase daily candles only; raises if missing or stale (last close older than ~2 days)."""
+    if sym not in _d1:
+        cut = int(t.timestamp()) // 86400 * 86400
+        _d1[sym] = [x for x in daily(sym) if x["t"] < cut]
+    d = _d1[sym]
+    if not d or int(t.timestamp()) - d[-1]["t"] > 2 * 86400 + 3600: raise ValueError(f"{sym} daily candles missing/stale")
+    return d
+def trend_block(sym, t):
+    """Returns a block reason, or None if both BTC and sym daily close > SMA50 (or filter off)."""
+    if not DAILY_TREND: return None
+    for x in dict.fromkeys(["BTC", sym]):
+        try: d = daily_closed(x, t)
+        except Exception as e: return f"daily trend data unavailable ({e}), entry skipped"
+        if len(d) < TREND_SMA: return f"daily trend data unavailable ({x} only {len(d)} days), entry skipped"
+        sma = sum(c["c"] for c in d[-TREND_SMA:]) / TREND_SMA
+        if d[-1]["c"] <= sma: return f"daily trend filter: {x} close {r2(d[-1]['c'])} <= SMA{TREND_SMA} {r2(sma)}"
+    return None
+def realized_vol(closes, n=VOL_DAYS):
+    r = [math.log(b / a) for a, b in zip(closes[-n-1:-1], closes[-n:])]
+    m = sum(r) / len(r)
+    return math.sqrt(sum((x - m) ** 2 for x in r) / (len(r) - 1)) * math.sqrt(365)
+def vol_qty(sym, entry, eq, t):
+    """Max qty implied by the vol target; None if sizing is off. Raises if data missing (caller skips the entry)."""
+    if not VOL_SIZING: return None
+    d = daily_closed(sym, t)
+    if len(d) < VOL_DAYS + 1: raise ValueError(f"{sym} only {len(d)} days for vol sizing")
+    rv = realized_vol([c["c"] for c in d])
+    return eq * VOL_TARGET / max(rv, 1e-6) / entry
 NEWS_WORDS = ("fomc", "cpi", "fed decision", "rate decision", "powell", "jobs report", "nonfarm")
 def c15(sym):
     rows = sorted(get(f"{CB}/products/{sym}-USD/candles?granularity=900"), key=lambda r: r[0])
@@ -294,8 +328,11 @@ def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
     expo = sum(notional(o) for o in p["open"]); room = EXPO_MAX * eq - expo
     orisk = sum(open_risk(o) for o in p["open"]); rroom = OPEN_RISK_MAX * eq - orisk
     held = sum(notional(o) for o in p["open"] if o["coin"] == s)
-    capn = min(CAP["core"] * lev, COIN_MAX * eq * lev - held, room)
+    capn = min(CAP_PCT["core"] * eq * lev, COIN_MAX * eq * lev - held, room)
     q = min(risk, rroom) / abs(entry - stop); q = min(q, capn / entry)
+    try: vq = vol_qty(s, entry, eq, t)
+    except Exception as e: notes.append(f"FILTER [perp {side}] {s}: vol sizing data unavailable ({e})"); return f"vol sizing data unavailable ({e})"
+    if vq is not None and vq < q: notes.append(f"VOL SIZE [perp {side}] {s}: qty {q:.6g} -> {vq:.6g} (40% vol target)"); q = vq
     n = int(q // m["cs"])
     cash = p["sleeves"]["core"]["cash"]
     while n > 0 and (n * m["cs"] * entry / lev + perp_fee(entry, n * m["cs"], m["cs"])) > cash * 0.999: n -= 1
@@ -357,6 +394,10 @@ def main():
     if eq0 - g["day_start_eq"] <= -DAILY_STOP: blocks.append(f"daily loss stop hit ({eq0 - g['day_start_eq']:+.2f} <= -${DAILY_STOP:.0f})")
     if eq0 <= g["peak"] * (1 - HALT_DD): blocks.append(f"HALT: account -15% from peak ${g['peak']:,.2f}, stop and review")
     half_all = g.get("half_week") == wk or g["week_low"] <= g["week_start_eq"] * (1 - WEEK_DD)
+    tl = p["day"].get("losses", 0) + p["day"].get("meme_losses", 0)
+    if tl >= LOSS_STOP: blocks.append(f"full stop: {tl} losses today (>= {LOSS_STOP})")
+    elif tl >= LOSS_HALF: half_all = True; notes.append(f"HALF SIZE: {tl} losses today (>= {LOSS_HALF})")
+    if eq0 - g["day_start_eq"] >= DAY_PROFIT_STOP: blocks.append(f"day profit lock: {eq0 - g['day_start_eq']:+.2f} >= +${DAY_PROFIT_STOP:.0f}, no new trades today")
     regime, meme_off_why = "normal", None
     try:
         bc = candles("BTC"); be50 = ema([x["c"] for x in bc], 50); r24 = bc[-24:]
@@ -462,8 +503,9 @@ def main():
         elif sl != "meme" and sum(o.get("sleeve") != "meme" for o in p["open"]) >= MAX_OPEN: why = f"max {MAX_OPEN} open (core+alts)"
         elif sl == "meme" and sum(o.get("sleeve") == "meme" for o in p["open"]) >= cfg["max_open"]: why = "meme sleeve max 2 open"
         elif p["day"]["entries"] >= MAX_DAY: why = f"{MAX_DAY} entries today"
-        elif sl != "meme" and p["day"]["losses"] >= MAX_LOSS: why = f"paused, {MAX_LOSS} losses today"
-        elif sl == "meme" and p["day"].get("meme_losses", 0) >= MAX_LOSS: why = "meme sleeve paused after 2 losses today"
+        if not why and not sg["setup"].startswith("SHORT"):
+            why = trend_block(s, t)
+            if why: notes.append(f"FILTER [{sl}] {s}: {why}")
         if why: rec["action"] = "skipped: " + why; scan["signals"].append(rec); continue
         short = sg["setup"].startswith("SHORT")
         if not why and sl == "core" and s in PERP:
@@ -482,10 +524,13 @@ def main():
             target = entry + 2 * (entry - stop); eq = equity(); mult = (0.5 if half_all else 1) * (0.5 if sl == "core" and regime == "risk-off" else 1)
             risk = eq * cfg["risk"] * mult; scash = p["sleeves"][sl]["cash"]
             held = sum(notional(o) for o in p["open"] if o["coin"] == s)
-            cap = min(CAP[sl], COIN_MAX * eq - held)
+            cap = min(CAP_PCT[sl] * eq, COIN_MAX * eq - held)
             qty = min(risk / (entry - stop), cap / entry, (scash * 0.999) / (entry * (1 + rate)))
             room = EXPO_MAX * eq - sum(notional(o) for o in p["open"]); rroom = OPEN_RISK_MAX * eq - sum(open_risk(o) for o in p["open"])
             qty = max(0.0, min(qty, room / entry, rroom / (entry - stop)))
+            try: vq = vol_qty(s, entry, eq, t)
+            except Exception as e: rec["action"] = f"skipped: vol sizing data unavailable ({e})"; notes.append(f"FILTER [{sl}] {s}: vol sizing data unavailable ({e})"); scan["signals"].append(rec); continue
+            if vq is not None and vq < qty: notes.append(f"VOL SIZE [{sl}] {s}: qty {qty:.6g} -> {vq:.6g} (40% vol target)"); qty = vq
             if qty * entry < 10: rec["action"] = f"skipped: size < $10 ({sl} sleeve cash)"; scan["signals"].append(rec); continue
             fee = entry * qty * rate; p["sleeves"][sl]["cash"] -= entry * qty + fee; sync_cash(p)
             last = sg["last"]
