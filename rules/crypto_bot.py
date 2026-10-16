@@ -57,8 +57,15 @@ def atr(cs, n=14):
     tr = [max(c["h"] - c["l"], abs(c["h"] - p["c"]), abs(c["l"] - p["c"])) for p, c in zip(cs, cs[1:])]
     return sum(tr[-n:]) / n
 def load():
-    p = json.load(open(PF)) if os.path.exists(PF) else dict(account="crypto-paper", starting_balance=START, cash=START, open=[], closed=[], equity_curve=[], day={}, runs=[])
+    # NO-RESET RULE (Joey 2026-10-15): never silently re-create or rebuild balances. BOT_INIT_OK=1 = Joey's one-time approval.
+    init_ok = os.environ.get("BOT_INIT_OK") == "1"
+    if not os.path.exists(PF):
+        if not init_ok: raise SystemExit(f"REFUSING TO START: {PF} is missing. Will not create a new ${START:,.0f} account. Restore it from git history (or set BOT_INIT_OK=1 with Joey's one-time approval).")
+        p = dict(account="crypto-paper", starting_balance=START, cash=START, open=[], closed=[], equity_curve=[], day={}, runs=[])
+    else:
+        p = json.load(open(PF))   # unparseable -> exception (fails loudly)
     if "sleeves" not in p:
+        if not init_ok: raise SystemExit("REFUSING TO START: portfolio has no 'sleeves'. Will not rebuild bucket cash from fixed $7K/$2K/$1K (would drop P&L). Restore from git (or set BOT_INIT_OK=1 with Joey's one-time approval).")
         if p["open"]: raise SystemExit("cannot migrate to sleeves with open positions")
         p["sleeves"] = {k: dict(alloc=v["alloc"], cash=v["alloc"]) for k, v in SLEEVES.items()}
     return p
@@ -389,7 +396,10 @@ def main():
     if g.get("week") != wk:
         if g.get("week") and g.get("week_low", 1e18) <= g.get("week_start_eq", 0) * (1 - WEEK_DD): g["half_week"] = wk
         g["week"] = wk; g["week_start_eq"] = round(eq0, 2); g["week_low"] = eq0
-    g["week_low"] = min(g.get("week_low", eq0), eq0); g["peak"] = max(g.get("peak", START), eq0)
+    g["week_low"] = min(g.get("week_low", eq0), eq0)
+    if "peak" not in g:
+        g["peak"] = max([x["equity"] for x in p.get("equity_curve", [])] + [eq0]); notes.append(f"RISK: peak missing, derived ${g['peak']:,.2f} from equity history + current equity")
+    g["peak"] = max(g["peak"], eq0)
     blocks = []
     if eq0 - g["day_start_eq"] <= -DAILY_STOP: blocks.append(f"daily loss stop hit ({eq0 - g['day_start_eq']:+.2f} <= -${DAILY_STOP:.0f})")
     if eq0 <= g["peak"] * (1 - HALT_DD): blocks.append(f"HALT: account -15% from peak ${g['peak']:,.2f}, stop and review")
@@ -575,11 +585,13 @@ def main():
     eq = equity(); p["equity"] = round(eq, 2); p["updated"] = scan["t"]; p["scan"] = scan
     p["equity_curve"].append(dict(t=p["updated"], equity=p["equity"])); p["equity_curve"] = p["equity_curve"][-3000:]
     p["runs"] = ([dict(t=p["updated"], notes=notes)] + p["runs"])[:50]
-    json.dump(p, open(PF, "w"), indent=1)
-    with open(JR, "w", newline="") as f:
+    with open(PF + ".tmp", "w") as f: json.dump(p, f, indent=1); f.flush(); os.fsync(f.fileno())
+    os.replace(PF + ".tmp", PF)                     # atomic: never leaves a half-written portfolio
+    with open(JR + ".tmp", "w", newline="") as f:
         w = csv.writer(f); w.writerow(COLS)
         for x in p["closed"] + p["open"]:
             w.writerow([x["entry_time"][:10], x["coin"], f"{x.get('sleeve','core')}:{x.get('inst','spot')}:{x['setup']}", x.get("side", "long") + (f" {x['lev']}x" if x.get("inst") == "perp" else ""), x["thesis"], x["entry_time"], x["entry"], x["stop"], x["target"], round(x["qty"], 6), x["risk"],
                         x.get("exit_time", ""), x.get("exit", ""), x.get("exit_reason", "OPEN"), x.get("pnl", ""), x.get("R", ""), "Y", "", ""])
+    os.replace(JR + ".tmp", JR)
     print("\n".join(notes)); print(f"Equity ${eq:,.2f}  cash ${p['cash']:,.2f}  open {len(p['open'])}  ({scan['secs']}s)")
 if __name__ == "__main__": main()

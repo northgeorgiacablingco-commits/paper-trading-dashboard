@@ -27,6 +27,9 @@ jobs:
           python-version: '3.12'
       - run: python scripts/update_data.py
         if: steps.fresh.outputs.skip != '1'
+      - name: Accounting regression tests (bot does not run if these fail)
+        if: steps.fresh.outputs.skip != '1'
+        run: python tests/test_accounting.py
       - name: Crypto paper bot
         if: steps.fresh.outputs.skip != '1'
         run: python rules/crypto_bot.py
