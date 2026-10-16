@@ -14,10 +14,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
       - name: Skip if another run just updated data (avoid double-processing)
         id: fresh
         run: |
-          git fetch -q origin main && git reset -q --hard origin/main
+          git fetch -q --depth=20 origin main && git reset -q --hard origin/main
           age=$(( $(date +%s) - $(git log -1 --format=%ct -- data/crypto_portfolio.json) ))
           echo "data age ${age}s"
           if [ "$age" -lt 180 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Fresh data (<180s), skipping"; fi
