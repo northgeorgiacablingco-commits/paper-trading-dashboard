@@ -41,8 +41,10 @@ async function refresh(){
 function countUp(el){const t=el.textContent.trim(),m=t.match(/^(-?\$?)([\d,]+(?:\.\d+)?)(.*)$/);if(!m)return;
   if(document.hidden||navigator.webdriver||/Headless/i.test(navigator.userAgent)){el.textContent=t;return;}
   const target=parseFloat(m[2].replace(/,/g,"")),dec=(m[2].split(".")[1]||"").length,t0=performance.now(),D=800;
-  (function step(now){const k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3);el.textContent=k>=1?t:m[1]+(target*e).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec})+m[3];if(k<1&&!document.hidden)requestAnimationFrame(step);else el.textContent=t;})(t0);
-  setTimeout(()=>el.textContent=t,D+50);document.addEventListener("visibilitychange",()=>el.textContent=t,{once:true});}
+  // only touch the element while it still shows what we last wrote; if a renderer updated it (e.g. live portfolio data), stop and never restore the stale snapshot
+  let mine=null;const put=v=>{if(mine!==null&&el.textContent!==mine)return false;el.textContent=mine=v;return true;};
+  (function step(now){const k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3);if(!put(k>=1?t:m[1]+(target*e).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec})+m[3]))return;if(k<1&&!document.hidden)requestAnimationFrame(step);else put(t);})(t0);
+  setTimeout(()=>put(t),D+50);document.addEventListener("visibilitychange",()=>put(t),{once:true});}
 setTimeout(()=>document.querySelectorAll(".val").forEach(countUp),50);
 if(window.Chart){Chart.defaults.animation={duration:500,easing:"easeOutCubic"};}
 refresh();setInterval(refresh,60000);setInterval(tickStamp,1000);
