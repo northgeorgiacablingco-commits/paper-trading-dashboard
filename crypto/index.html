@@ -38,22 +38,23 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left
 <li><b>Short entries</b> mirror the long rules. They are allowed only when BTC's 1h close is below its EMA50. Setups are a breakdown below the prior 24h low, or a failed rally at EMA20, with a downtrend (close &lt; EMA20 &lt; EMA50) and signal volume of at least 1.2x. Stop 1.5×ATR above entry, 50% off at 2R, then breakeven and a 2×ATR trail.</li>
 <li><b>Costs modeled:</b> Coinbase's published perp fee of 0.02% of notional + $0.15 per contract per side, plus 0.03% slippage. A liquidation costs 0.10% + $0.15. Funding is charged hourly on the full notional using Coinbase Derivatives' live funding rate; if that feed fails, the bot uses OKX, then Kraken, as a labeled proxy.</li>
 <li><b>Funding filter:</b> no new longs when funding is +0.05%/8h or more, and no new shorts at −0.05%/8h or less. Exit if funding paid passes 0.5R.</li>
-<li><b>Limits:</b> total exposure ≤ 1.5× equity, at most 2 shorts, total open risk ≤ 4%, plus all existing limits. Liquidation is simulated on mark price, using Coinbase spot as the index proxy. <b>Any simulated liquidation pauses all leverage for 7 days and is a BIG email alert.</b></li>
+<li><b>Limits:</b> total exposure ≤ 1.5× equity, at most 2 shorts, total open risk ≤ 8% (was 4%; aggressive paper profile), plus all existing limits. Liquidation is simulated on mark price, using Coinbase spot as the index proxy. <b>Any simulated liquidation pauses all leverage for 7 days and is a BIG email alert.</b></li>
 <li><b>Known gaps:</b> real CFM margin is set by the clearinghouse and is account-level, not isolated. The maintenance-margin rates are conservative assumptions (BTC 10%, ETH 12%, SOL/XRP 15%). Overnight margin is higher than intraday. The exchange closes Fridays 5 to 6 PM ET.</li></ul></div>
+<div class="card" style="border:2px solid #d97706"><b>AGGRESSIVE_PAPER_PROFILE</b>, approved by Joey 2026-10-18 20:30Z. Paper only, being tested for 1 week. Risk per trade is 2% / 1.5% / 1% (was 1% / 0.75% / 0.5%). Daily loss stop is −$400 (was −$200), max open risk is 8% (was 4%), the profit lock is +$600 (was +$300), and the market-volume gate is 35% (was 70%). The loss-streak rules are unchanged: half size after 2 losses, stop after 3. The baseline to beat is 7 trades, 28.6% win rate, −0.07R.</div>
 <h2>2. Entry rules</h2>
 <p>Market regime gate (all sleeves): BTC above its 1h EMA50 = normal; below = Core half size, Meme sleeve off.
 Core (top 8, $7,000):
 - 1h close above EMA20 and EMA50 AND (close above prior 24h high OR bounce off EMA20 with a green 1h close).
 - Volume on signal candle &gt;= 1.2x 20-hour avg.
-- Risk 1% of account ($100) per trade; size = $100 / (entry - stop); max $2,500 per coin.
+- Risk 2% of account (~$200) per trade (was 1%); size = risk / (entry - stop); max 25% of equity per coin.
 Strong Movers ($2,000):
 - From full scan: 24h vol &gt;= $5M, listed 30+ days, top 20 by 24h+7d momentum, volume &gt;= 2x avg.
 - Same 1h trend + breakout rule; skip if already up &gt;25% in 24h (chasing).
-- Risk 0.75% ($75) per trade; max $800 per coin.
+- Risk 1.5% (~$150) per trade (was 0.75%); max 8% of equity per coin.
 Meme / Speculative ($1,000):
 - 24h vol &gt;= $2M, liquidity &gt;= $250K, no honeypot/mint/freeze flags, top 10 holders &lt; 30%, age &gt;= 7 days.
 - Entry: 15m breakout above 4h high with volume &gt;= 3x avg, never market-buy a vertical candle.
-- Risk 0.5% ($50) per trade; max $400 per coin; max 2 open.</p>
+- Risk 1% (~$100) per trade (was 0.5%); max 4% of equity per coin; max 2 open.</p>
 <h2>3. Exit rules</h2>
 <ul>
 <li>Stop: Core/Movers 1.5x ATR(1h) below entry; Meme 12% below entry or below breakout candle low, whichever is tighter.</li>
@@ -64,10 +65,10 @@ Meme / Speculative ($1,000):
 </ul>
 <h2>4. Risk management</h2>
 <ul>
-<li>Max daily loss: -2% ($200) total = stop new entries until next day. Meme sleeve: 2 losses = off for the day.</li>
+<li>Max daily loss: −$400 total (was −$200) = stop new entries until next day. Profit lock: +$600/day (was +$300) = no new entries. Meme sleeve: 2 losses = off for the day.</li>
 <li>Max open: 3 Core/Movers + 2 Meme. Max 5 new trades/day. Max 25% of account in one coin.</li>
 <li>Weekly drawdown -6%: half size for the next week. Account -15% from peak: stop and review.</li>
-<li>Stand aside when: BTC 24h range &lt; 1.5% (chop), total market volume &lt; 70% of 7-day avg, or within 30 min of CPI/FOMC/major news.</li>
+<li>Stand aside when: BTC 24h range &lt; 1.5% (chop), total market volume &lt; 35% of the cleaned 7-day median (was 70%), or within 30 min of CPI/FOMC/major news.</li>
 <li>Correlation: max 2 positions moving with the same theme (e.g., two SOL memes).</li>
 </ul>
 <h2>5. Automations to approve</h2>
@@ -92,7 +93,7 @@ The bot is <code>rules/crypto_bot.py</code> in the paper-trading-dashboard repo.
 <li><strong>Entry:</strong> the live ticker price at the time of the run.</li>
 <li><strong>Stop:</strong> entry − 1.5 × ATR(14). <strong>Target:</strong> 2R.</li>
 <li><strong>Exits:</strong> checked against real 1h candle highs/lows after entry. The stop is checked first, which is conservative.</li>
-<li><strong>Risk:</strong> 1% of equity per trade, no leverage (position ≤ cash), simulated 0.10% fee per side.</li>
+<li><strong>Risk:</strong> (original v1 rules, superseded: now 2% under the aggressive paper profile) 1% of equity per trade, no leverage (position ≤ cash), simulated 0.10% fee per side.</li>
 <li><strong>Limits:</strong> max 3 open positions, max 5 entries per UTC day, and pause for the day after 2 losses.</li>
 <li><strong>Journal:</strong> every trade gets a written thesis, and every run logs a "no signal" reason for each coin.</li>
 <li><strong>Review:</strong> judge only after 50+ closed trades: needs positive expectancy, and max drawdown ≤ 10%.</li>
@@ -243,7 +244,7 @@ function renderPF(){if(!PF)return;const st=PF.starting_balance;let eq=PF.cash;
 let slChart=null;
 function renderScan(){const S=PF.scan,SL=PF.sleeves;
  if(SL){const k=Object.keys(SL),nm={core:"Core",alts:"Momentum Alts",meme:"Meme/Speculative"};
-  $("slT").innerHTML=k.map(x=>{const v=SL[x],eq=v.equity??v.cash,pl=v.pnl??(eq-v.alloc);return `<tr><td><b>${nm[x]||x}</b></td><td>${m2(v.alloc)}</td><td>${m2(eq)}</td><td class="${cls(pl)}">${m2(pl)}</td><td>${v.open??0}</td><td>${({core:"1%",alts:"0.75%",meme:"0.5%"})[x]||""}</td></tr>`}).join("");
+  $("slT").innerHTML=k.map(x=>{const v=SL[x],eq=v.equity??v.cash,pl=v.pnl??(eq-v.alloc);return `<tr><td><b>${nm[x]||x}</b></td><td>${m2(v.alloc)}</td><td>${m2(eq)}</td><td class="${cls(pl)}">${m2(pl)}</td><td>${v.open??0}</td><td>${({core:"2%",alts:"1.5%",meme:"1%"})[x]||""}</td></tr>`}).join("");
   if(window.Chart){const d={labels:k.map(x=>nm[x]||x),datasets:[{data:k.map(x=>SL[x].equity??SL[x].cash),backgroundColor:["#5b8cff","#22c55e","#f59e0b"]}]};
    if(slChart){slChart.data=d;slChart.update();}else slChart=new Chart($("slC"),{type:"doughnut",data:d,options:{animation:false,maintainAspectRatio:false}});}}
  if(S&&S.derivs){$("dvT").innerHTML=S.derivs.map(d=>`<tr><td><b>${esc(d.coin)}</b></td><td>${esc(d.pid)} (${d.cs} ${esc(d.coin)})</td><td class="${cls(-d.fr_1h)}">${(d.fr_1h*100).toFixed(4)}%</td><td>${(d.fr_1h*800).toFixed(4)}%</td><td>${(+d.oi).toLocaleString()} ${esc(d.oi_unit)}</td><td class="${d.proxy?"warn":""}">${esc(d.src)}</td></tr>`).join("");const X=S.exposure||{};$("dvN").textContent=`Exposure ${m2(X.notional||0)} of ${m2(X.cap||0)} cap · open risk ${m2(X.open_risk||0)} of ${m2(X.risk_cap||0)} · shorts ${X.shorts||0}/${X.max_shorts||2}`+(X.perp_pause_until?` · LEVERAGE PAUSED until ${X.perp_pause_until}`:"")+` · as of ${S.t}`;}
@@ -298,9 +299,9 @@ render(k){if(!PF)return '<div class="sh-empty">Loading…</div>';const P=pos(),e
   const sl=Object.entries(PF.sleeves||{}).map(([n,v])=>{const cur=v.cash+P.filter(p=>p.sleeve===n).reduce((s,p)=>s+p.val,0),d=cur-v.alloc;return row(`${SLN[n]||n} <span class="sh-note">(${v.open} open)</span>`,`${m2(v.alloc)} → ${m2(cur)} <span class="${cls(d)}">${sg(d)}</span>`);}).join("");
   return tot([["Equity",m2(eq)],["Start",m2(st)],["Total P&L",sg(eq-st),cls(eq-st)]])+'<div class="sh-sec">Cash vs invested</div>'+row("Cash",m2(PF.cash))+row("In open trades",m2(inv))+row("Cash share",(PF.cash/eq*100).toFixed(1)+"%")+'<div class="sh-sec">Sleeves (start → now)</div>'+sl+'<div class="sh-sec">Costs</div>'+row("Fees paid (paper)",m2(fees),"neg")+`<p class="sh-note">Bot snapshot ${asof}; open trades marked to live prices.</p>`;}
  if(k==="pnl"){const real=PF.closed.reduce((s,c)=>s+(c.pnl||0),0),un=P.reduce((s,p)=>s+p.u,0),dy=eq-(R.day_start_eq??st),wk=eq-(R.week_start_eq??st),pk=Math.max(R.peak||st,eq),dd=(pk-eq)/pk*100,wl=(R.week_start_eq||st)*0.06;
-  const lim=(v,L)=>v<=-L?["HIT","neg"]:v<=-L*.5?["Caution","warn"]:["OK","ok"];const a=lim(dy,200),b=lim(wk,wl),c=dd>=15?["HALT","neg"]:dd>=7.5?["Caution","warn"]:["OK","ok"];
+  const lim=(v,L)=>v<=-L?["HIT","neg"]:v<=-L*.5?["Caution","warn"]:["OK","ok"];const a=lim(dy,400),b=lim(wk,wl),c=dd>=15?["HALT","neg"]:dd>=7.5?["Caution","warn"]:["OK","ok"];
   return tot([["Total",sg(eq-st),cls(eq-st)],["Realized",sg(real),cls(real)],["Unrealized",sg(un),cls(un)]])+'<div class="sh-sec">Today & this week</div>'+row("Today (since "+(R.day||"")+" start)",sg(dy),cls(dy))+row("This week ("+(R.week||"")+")",sg(wk),cls(wk))+
-   '<div class="sh-sec">Risk limits</div>'+row("Daily loss stop (−$200)",a[0],a[1])+row("Weekly drawdown (−6% = −"+m2(wl)+")",b[0],b[1])+row("Max drawdown halt (−15%) · now −"+dd.toFixed(2)+"%",c[0],c[1])+(S2=>S2?row("Total exposure (cap 1.5× equity)",m2(S2.notional)+" / "+m2(S2.cap))+row("Open risk (cap 4%)",m2(S2.open_risk)+" / "+m2(S2.risk_cap))+row("Shorts open",S2.shorts+" / "+S2.max_shorts)+row("Leverage pause",S2.perp_pause_until?"until "+S2.perp_pause_until:"none",S2.perp_pause_until?"neg":"ok"):"")((PF.scan||{}).exposure)+row("Entries today",PF.day?.entries??0)+row("Losses today",PF.day?.losses??0);}
+   '<div class="sh-sec">Risk limits</div>'+row("Daily loss stop (−$400)",a[0],a[1])+row("Weekly drawdown (−6% = −"+m2(wl)+")",b[0],b[1])+row("Max drawdown halt (−15%) · now −"+dd.toFixed(2)+"%",c[0],c[1])+(S2=>S2?row("Total exposure (cap 1.5× equity)",m2(S2.notional)+" / "+m2(S2.cap))+row("Open risk (cap 8%)",m2(S2.open_risk)+" / "+m2(S2.risk_cap))+row("Shorts open",S2.shorts+" / "+S2.max_shorts)+row("Leverage pause",S2.perp_pause_until?"until "+S2.perp_pause_until:"none",S2.perp_pause_until?"neg":"ok"):"")((PF.scan||{}).exposure)+row("Entries today",PF.day?.entries??0)+row("Losses today",PF.day?.losses??0);}
  if(k==="trades"){const w=PF.closed.filter(c=>c.pnl>0).length,n=PF.closed.length;return tot([["Closed",n],["Wins",w],["Win rate",n?Math.round(w/n*100)+"%":"n/a"]])+closedList();}}};
 loadPF().then(heldPx);setInterval(heldPx,60000);
 const _rpf=renderPF;renderPF=function(){_rpf();SHEETS.refresh&&SHEETS.refresh();};

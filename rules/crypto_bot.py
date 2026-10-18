@@ -5,7 +5,7 @@ Filters: 24h volume >= $5M, >= 30 days of daily candles on Coinbase, no stableco
 Ranking: momentum score = 24h% + 0.5 x 7d% + 10 x log2(volume surge), surge = 24h $vol / 30d avg daily $vol.
 Rules on the top candidates (1h, closed candles only): close above EMA20 and EMA50 with EMA20 > EMA50; trigger = fresh
 close above the prior 24h high (BREAKOUT) or an EMA20 pullback bounce (PULLBACK). Stop = entry - 1.5 x ATR(14), target 2R.
-Risk 1% of equity; spot longs 1x; BTC/ETH/SOL/XRP via Coinbase Derivatives US perps (long+short, default 2x, max 3x, isolated), max 3 open, max 5 entries/UTC day, half size after 2 losses/day, stop after 3, stop at +$300/day; daily SMA50 trend filter for longs; 40% vol-target sizing.
+Risk 2% of equity (AGGRESSIVE_PAPER_PROFILE, was 1%); spot longs 1x; BTC/ETH/SOL/XRP via Coinbase Derivatives US perps (long+short, default 2x, max 3x, isolated), max 3 open, max 5 entries/UTC day, half size after 2 losses/day, stop after 3, stop at +$600/day (was +$300), daily loss stop $400 (was $200), max open risk 8% (was 4%), market-volume gate 35% (was 70%); daily SMA50 trend filter for longs; 40% vol-target sizing.
 Costs: fee+slippage 0.1%/side for top-20 market cap, 0.2%/side for smaller caps. Exits use real 1h highs/lows after entry."""
 import json, os, csv, math, time, urllib.request
 from datetime import datetime, timezone
@@ -18,7 +18,14 @@ MIN_VOL, MEME_VOL, MIN_DAYS, TOP_N = 5e6, 2e6, 30, 80
 # Meme safety: honeypot/mint/freeze/holder checks do not apply to or are not available for Coinbase-listed spot assets;
 # Coinbase listing + >=30d history + order-book depth (+/-2%) >= $250K + no >40% one-day crash are used instead.
 # Sleeves (paper): risk is % of TOTAL account equity, capped by the sleeve's own cash.
-SLEEVES = {"core": dict(alloc=7000.0, risk=0.01), "alts": dict(alloc=2000.0, risk=0.0075), "meme": dict(alloc=1000.0, risk=0.005, max_open=2, cost=0.005)}
+# ==== AGGRESSIVE_PAPER_PROFILE approved by Joey 2026-10-18 20:30Z, paper only, under evaluation for 1 week ====
+# Baseline to beat (conservative profile, through 2026-10-18): 7 closed trades, 28.6% win rate, -0.07R expectancy.
+# Old -> new: sleeve risk 1%/0.75%/0.5% -> 2%/1.5%/1%; DAILY_STOP $200 -> $400; OPEN_RISK_MAX 4% -> 8%;
+# DAY_PROFIT_STOP +$300 -> +$600; market-volume gate 70% -> 35% of cleaned 7-day median (median/3x-outlier fix kept).
+# Loss-streak rules are counts (half size after 2 losses/day, stop after 3) and are unchanged.
+AGGRESSIVE_PAPER_PROFILE = True
+SLEEVES = {"core": dict(alloc=7000.0, risk=0.02), "alts": dict(alloc=2000.0, risk=0.015), "meme": dict(alloc=1000.0, risk=0.01, max_open=2, cost=0.005)}
+VOL_GATE_PCT = 0.35 if AGGRESSIVE_PAPER_PROFILE else 0.70   # market-volume gate: today's volume >= this x cleaned 7-day median
 STABLE = {"USDT","USDC","DAI","FDUSD","TUSD","USDE","USDS","PYUSD","USDD","FRAX","GUSD","USDP","LUSD","EURC","EURT","USD1","RLUSD","USDG","USDTB","BUSD","SUSDE","XAUT","PAXG","USTC"}
 BADWORDS = ("wrapped", "staked", "bridged", "liquid staking", " usd", "usd ", "pegged", "restaked", "tokenized")
 COLS = ["date","ticker","setup","direction","thesis","entry_time","entry_price","stop","target","shares","risk_$","exit_time","exit_price","exit_reason","pnl_$","R_multiple","followed_rules(Y/N)","grade","lessons"]
@@ -73,12 +80,12 @@ def sync_cash(p): p["cash"] = round(sum(v["cash"] for v in p["sleeves"].values()
 def vol_baseline(vals, k=3.0):
     """Market-volume gate baseline (data fix, Joey 2026-10-18): drop non-positive/NaN readings and any reading > k x the
     window median (e.g. bogus ~$2T prints), then return (median of the remaining readings, rejected count).
-    Filters at calc time only; stored vol_hist is untouched. Gate threshold (70%) is unchanged."""
+    Filters at calc time only; stored vol_hist is untouched. Gate threshold = VOL_GATE_PCT (35% under AGGRESSIVE_PAPER_PROFILE, was 70%)."""
     ok = [float(v) for v in vals if isinstance(v, (int, float)) and math.isfinite(v) and v > 0]
     if not ok: return 0.0, len(vals)
     med = _median(ok); clean = [v for v in ok if v <= k * med]
     return _median(clean), len(vals) - len(clean)
-def vol_gate_ok(tv, av): return tv >= 0.7 * av  # unchanged 70% market-volume gate
+def vol_gate_ok(tv, av): return tv >= VOL_GATE_PCT * av  # 35% under AGGRESSIVE_PAPER_PROFILE (was 70%)
 def _median(v):
     v = sorted(v); n = len(v)
     return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
@@ -100,12 +107,12 @@ def universe(notes):
 from zoneinfo import ZoneInfo
 # ---- Approved playbook (PLAYBOOK.md, approved by Joey 2026-10-14) ----
 CAP_PCT = {"core": 0.25, "alts": 0.08, "meme": 0.04}   # max per coin per sleeve as % of CURRENT equity (was $2,500/$800/$400 at $10K) -> compounds
-COIN_MAX, DAILY_STOP, WEEK_DD, HALT_DD = 0.25, 200.0, 0.06, 0.15
+COIN_MAX, DAILY_STOP, WEEK_DD, HALT_DD = 0.25, 400.0, 0.06, 0.15   # DAILY_STOP $200 -> $400 (AGGRESSIVE_PAPER_PROFILE)
 TIME_STOP = {"core": 24, "alts": 24, "meme": 6}             # hours to reach +1R
 # ---- Upgrades approved by Joey 2026-10-14 (toggle via constants) ----
 DAILY_TREND, TREND_SMA = True, 50          # LONG entries only if BTC and coin daily close > 50-day SMA
 VOL_SIZING, VOL_TARGET, VOL_DAYS = True, 0.40, 20   # size <= equity * 40% / coin 20d annualized realized vol
-LOSS_HALF, LOSS_STOP, DAY_PROFIT_STOP = 2, 3, 300.0  # half size after 2 losses/day, stop after 3, stop new trades at +$300/day
+LOSS_HALF, LOSS_STOP, DAY_PROFIT_STOP = 2, 3, 600.0  # half size after 2 losses/day, stop after 3, stop new trades at +$600/day (was +$300, AGGRESSIVE_PAPER_PROFILE)
 _d1 = {}
 def daily_closed(sym, t):
     """Closed Coinbase daily candles only; raises if missing or stale (last close older than ~2 days)."""
@@ -211,7 +218,7 @@ LEV_DEFAULT, LEV_MAX = 2.0, 3.0
 PERP_FEE, PERP_LIQ_FEE, PER_CONTRACT = 0.0002, 0.0010, 0.15
 SLIP = 0.0003                                  # assumed slippage per side on perp fills
 FUND_LONG_MAX, FUND_SHORT_MIN = 0.0005, -0.0005  # 8h-equivalent funding filter
-EXPO_MAX, MAX_SHORTS, OPEN_RISK_MAX, LIQ_BUFFER, PAUSE_DAYS = 1.5, 2, 0.04, 3.0, 7
+EXPO_MAX, MAX_SHORTS, OPEN_RISK_MAX, LIQ_BUFFER, PAUSE_DAYS = 1.5, 2, 0.08, 3.0, 7   # OPEN_RISK_MAX 4% -> 8% (AGGRESSIVE_PAPER_PROFILE)
 def derivs(notes):
     """Funding (hourly) + open interest. Primary: Coinbase Derivatives public API (the venue we would actually use).
     Fallback: OKX (8h rate / 8, labeled PROXY), then Kraken Futures (PROXY)."""
@@ -377,6 +384,7 @@ def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
     return True
 def main():
     t0 = time.time(); p = load(); t = now(); today = t.strftime("%Y-%m-%d"); notes = []
+    if AGGRESSIVE_PAPER_PROFILE: notes.append("PROFILE: AGGRESSIVE_PAPER_PROFILE (Joey 2026-10-18 20:30Z, paper only, 1-week eval): risk 2%/1.5%/1%, open risk cap 8%, daily stop -$400, profit lock +$600, volume gate 35%")
     if p["day"].get("date") != today: p["day"] = dict(date=today, entries=0, losses=0, meme_losses=0, realized=0)
     dv = derivs(notes)
     for c, d in dv.items(): notes.append(f"DERIVS {c}: funding {d['fr_1h']*100:+.4f}%/h ({d['fr_1h']*800:+.4f}%/8h), OI {d['oi']:,.0f} {d['oi_unit']} [{d['src']}]")
@@ -443,9 +451,9 @@ def main():
         tv = sum(u["vol"] for u in uni); vh = [x for x in p.get("vol_hist", []) if x[0] >= t.timestamp() - 7 * 86400]
         if len(vh) >= 12 and (vh[-1][0] - vh[0][0]) >= 86400:
             av, nrej = vol_baseline([x[1] for x in vh])
-            notes.append(f"Market-volume baseline: 7-day median ${av/1e9:.1f}B from {len(vh)-nrej}/{len(vh)} readings ({nrej} rejected as >3x median or invalid); now ${tv/1e9:.1f}B, gate 70% = ${0.7*av/1e9:.1f}B")
+            notes.append(f"Market-volume baseline: 7-day median ${av/1e9:.1f}B from {len(vh)-nrej}/{len(vh)} readings ({nrej} rejected as >3x median or invalid); now ${tv/1e9:.1f}B, gate {VOL_GATE_PCT*100:.0f}% = ${VOL_GATE_PCT*av/1e9:.1f}B")
             if av <= 0: blocks.append("market-volume baseline unavailable: no valid readings in 7-day window")
-            elif not vol_gate_ok(tv, av): blocks.append(f"low market volume: ${tv/1e9:.1f}B < 70% of 7-day median ${av/1e9:.1f}B")
+            elif not vol_gate_ok(tv, av): blocks.append(f"low market volume: ${tv/1e9:.1f}B < {VOL_GATE_PCT*100:.0f}% of 7-day median ${av/1e9:.1f}B")
         else: notes.append("Market-volume gate: collecting history (needs >= 1 day of runs)")
         if not vh or t.timestamp() - vh[-1][0] >= 3600: vh.append([int(t.timestamp()), round(tv)])
         p["vol_hist"] = vh[-200:]
@@ -585,6 +593,7 @@ def main():
     scan["exposure"] = dict(notional=round(sum(notional(o) for o in p["open"]), 2), cap=round(EXPO_MAX * eqx, 2), open_risk=round(sum(open_risk(o) for o in p["open"]), 2),
                             risk_cap=round(OPEN_RISK_MAX * eqx, 2), shorts=sum(o.get("side") == "short" for o in p["open"]), max_shorts=MAX_SHORTS, perp_pause_until=g.get("perp_pause_until"))
     for o in p["open"]: o.setdefault("side", "long"); o.setdefault("inst", "spot"); o.setdefault("lev", 1.0)
+    scan["profile"] = dict(name="AGGRESSIVE_PAPER_PROFILE" if AGGRESSIVE_PAPER_PROFILE else "conservative", approved="Joey 2026-10-18 20:30Z", risk={k: v["risk"] for k, v in SLEEVES.items()}, daily_stop=DAILY_STOP, profit_lock=DAY_PROFIT_STOP, open_risk_max=OPEN_RISK_MAX, vol_gate=VOL_GATE_PCT, loss_half=LOSS_HALF, loss_stop=LOSS_STOP)
     scan["regime"] = regime; scan["blocks"] = blocks; scan["half_size"] = half_all; scan["meme_off"] = meme_off_why
     if blocks: notes.insert(1, "NO NEW ENTRIES: " + "; ".join(blocks))
     if not sigs: notes.append("No trade signals: no ranked coin had trend + fresh 24h-high breakout or EMA20 pullback bounce on the last closed 1h candle.")
