@@ -22,6 +22,8 @@ MIN_VOL, MEME_VOL, MIN_DAYS, TOP_N = 5e6, 2e6, 30, 80
 # Baseline to beat (conservative profile, through 2026-10-18): 7 closed trades, 28.6% win rate, -0.07R expectancy.
 # Old -> new: sleeve risk 1%/0.75%/0.5% -> 2%/1.5%/1%; DAILY_STOP $200 -> $400; OPEN_RISK_MAX 4% -> 8%;
 # DAY_PROFIT_STOP +$300 -> +$600; market-volume gate 70% -> 35% of cleaned 7-day median (median/3x-outlier fix kept).
+# Per-coin caps (cap raise approved by Joey 2026-10-18 20:41Z, new entries only): CAP_PCT 25%/8%/4% -> 60%/25%/12% of equity
+# (x leverage for perps), COIN_MAX 25% -> 60%. 40% vol-target sizing, 1.5x total exposure and sleeve cash still apply.
 # Loss-streak rules are counts (half size after 2 losses/day, stop after 3) and are unchanged.
 AGGRESSIVE_PAPER_PROFILE = True
 SLEEVES = {"core": dict(alloc=7000.0, risk=0.02), "alts": dict(alloc=2000.0, risk=0.015), "meme": dict(alloc=1000.0, risk=0.01, max_open=2, cost=0.005)}
@@ -106,8 +108,9 @@ def universe(notes):
     return out
 from zoneinfo import ZoneInfo
 # ---- Approved playbook (PLAYBOOK.md, approved by Joey 2026-10-14) ----
-CAP_PCT = {"core": 0.25, "alts": 0.08, "meme": 0.04}   # max per coin per sleeve as % of CURRENT equity (was $2,500/$800/$400 at $10K) -> compounds
-COIN_MAX, DAILY_STOP, WEEK_DD, HALT_DD = 0.25, 400.0, 0.06, 0.15   # DAILY_STOP $200 -> $400 (AGGRESSIVE_PAPER_PROFILE)
+CAP_PCT = {"core": 0.60, "alts": 0.25, "meme": 0.12}   # was 0.25/0.08/0.04; raised for AGGRESSIVE_PAPER_PROFILE (Joey 2026-10-18 20:41Z)
+   # max per coin per sleeve as % of CURRENT equity (was $2,500/$800/$400 at $10K) -> compounds
+COIN_MAX, DAILY_STOP, WEEK_DD, HALT_DD = 0.60, 400.0, 0.06, 0.15   # DAILY_STOP $200 -> $400 (AGGRESSIVE_PAPER_PROFILE)
 TIME_STOP = {"core": 24, "alts": 24, "meme": 6}             # hours to reach +1R
 # ---- Upgrades approved by Joey 2026-10-14 (toggle via constants) ----
 DAILY_TREND, TREND_SMA = True, 50          # LONG entries only if BTC and coin daily close > 50-day SMA
@@ -384,7 +387,7 @@ def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
     return True
 def main():
     t0 = time.time(); p = load(); t = now(); today = t.strftime("%Y-%m-%d"); notes = []
-    if AGGRESSIVE_PAPER_PROFILE: notes.append("PROFILE: AGGRESSIVE_PAPER_PROFILE (Joey 2026-10-18 20:30Z, paper only, 1-week eval): risk 2%/1.5%/1%, open risk cap 8%, daily stop -$400, profit lock +$600, volume gate 35%")
+    if AGGRESSIVE_PAPER_PROFILE: notes.append("PROFILE: AGGRESSIVE_PAPER_PROFILE (Joey 2026-10-18 20:30Z, paper only, 1-week eval): risk 2%/1.5%/1%, open risk cap 8%, daily stop -$400, profit lock +$600, volume gate 35%, per-coin caps 60%/25%/12% (COIN_MAX 60%, raised 20:41Z)")
     if p["day"].get("date") != today: p["day"] = dict(date=today, entries=0, losses=0, meme_losses=0, realized=0)
     dv = derivs(notes)
     for c, d in dv.items(): notes.append(f"DERIVS {c}: funding {d['fr_1h']*100:+.4f}%/h ({d['fr_1h']*800:+.4f}%/8h), OI {d['oi']:,.0f} {d['oi_unit']} [{d['src']}]")
