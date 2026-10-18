@@ -70,6 +70,18 @@ def load():
         p["sleeves"] = {k: dict(alloc=v["alloc"], cash=v["alloc"]) for k, v in SLEEVES.items()}
     return p
 def sync_cash(p): p["cash"] = round(sum(v["cash"] for v in p["sleeves"].values()), 6)
+def vol_baseline(vals, k=3.0):
+    """Market-volume gate baseline (data fix, Joey 2026-10-18): drop non-positive/NaN readings and any reading > k x the
+    window median (e.g. bogus ~$2T prints), then return (median of the remaining readings, rejected count).
+    Filters at calc time only; stored vol_hist is untouched. Gate threshold (70%) is unchanged."""
+    ok = [float(v) for v in vals if isinstance(v, (int, float)) and math.isfinite(v) and v > 0]
+    if not ok: return 0.0, len(vals)
+    med = _median(ok); clean = [v for v in ok if v <= k * med]
+    return _median(clean), len(vals) - len(clean)
+def vol_gate_ok(tv, av): return tv >= 0.7 * av  # unchanged 70% market-volume gate
+def _median(v):
+    v = sorted(v); n = len(v)
+    return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
 def universe(notes):
     cg = get("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&price_change_percentage=24h,7d", pace=0)
     try: meme = {c["symbol"].upper() for c in get("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&category=meme-token&order=market_cap_desc&per_page=250&page=1", pace=0)}
@@ -430,8 +442,10 @@ def main():
     if uni:
         tv = sum(u["vol"] for u in uni); vh = [x for x in p.get("vol_hist", []) if x[0] >= t.timestamp() - 7 * 86400]
         if len(vh) >= 12 and (vh[-1][0] - vh[0][0]) >= 86400:
-            av = sum(x[1] for x in vh) / len(vh)
-            if tv < 0.7 * av: blocks.append(f"low market volume: ${tv/1e9:.1f}B < 70% of 7-day avg ${av/1e9:.1f}B")
+            av, nrej = vol_baseline([x[1] for x in vh])
+            notes.append(f"Market-volume baseline: 7-day median ${av/1e9:.1f}B from {len(vh)-nrej}/{len(vh)} readings ({nrej} rejected as >3x median or invalid); now ${tv/1e9:.1f}B, gate 70% = ${0.7*av/1e9:.1f}B")
+            if av <= 0: blocks.append("market-volume baseline unavailable: no valid readings in 7-day window")
+            elif not vol_gate_ok(tv, av): blocks.append(f"low market volume: ${tv/1e9:.1f}B < 70% of 7-day median ${av/1e9:.1f}B")
         else: notes.append("Market-volume gate: collecting history (needs >= 1 day of runs)")
         if not vh or t.timestamp() - vh[-1][0] >= 3600: vh.append([int(t.timestamp()), round(tv)])
         p["vol_hist"] = vh[-200:]
