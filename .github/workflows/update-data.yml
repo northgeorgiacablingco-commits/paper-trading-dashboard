@@ -1,4 +1,4 @@
-name: Update market data + crypto paper bot
+name: Update market data + crypto and stock paper bots
 on:
   schedule:
     - cron: '2-59/5 * * * *'
@@ -35,6 +35,11 @@ jobs:
       - name: Crypto paper bot
         if: steps.fresh.outputs.skip != '1'
         run: python rules/crypto_bot.py
+      - name: Stock paper bot (isolated; never fails the job or blocks crypto)
+        if: steps.fresh.outputs.skip != '1'
+        continue-on-error: true
+        run: |
+          python tests/test_stock_accounting.py && python rules/stock_bot.py || echo "::warning::stock paper bot skipped or failed (crypto run unaffected)"
       - name: Commit if changed
         if: steps.fresh.outputs.skip != '1'
         run: |

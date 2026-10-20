@@ -1,0 +1,57 @@
+{
+ "account": "stock_paper",
+ "cash": 10000.0,
+ "closed": [],
+ "created": "2026-10-20T21:51:39Z",
+ "day": {
+  "date": "2026-10-20",
+  "entries": 0,
+  "losses": 0,
+  "realized": 0.0,
+  "start_eq": null,
+  "traded": []
+ },
+ "equity": 10000.0,
+ "note": "Simulated only. No broker, no real money. Never reset (NO-RESET RULE).",
+ "open": [],
+ "rules": {
+  "commission": 0.0,
+  "daily_stop": 400.0,
+  "data_source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars, regular hours",
+  "half_size_after_losses": 2,
+  "max_entries_day": 4,
+  "max_open": 3,
+  "open_risk_max": 0.08,
+  "position_notional_max": 1.0,
+  "profile": "AGGRESSIVE paper (Joey 2026-10-20 'Trade both' / 'Agresivo')",
+  "profit_lock": 600.0,
+  "risk_per_trade": 0.02,
+  "session": "NYSE 9:30-16:00 ET trading days; no entries after 15:30; flatten 15:55 (early close: 12:30 / 12:55)",
+  "slippage_bps": 2.0,
+  "stale_after_sec": 900,
+  "stop_after_losses": 3,
+  "strategy": "orb15_v1",
+  "total_notional_max": 2.0,
+  "universe": [
+   "SPY",
+   "QQQ",
+   "IWM",
+   "AAPL",
+   "MSFT",
+   "NVDA",
+   "TSLA",
+   "AMZN",
+   "META",
+   "GOOGL",
+   "AMD"
+  ]
+ },
+ "start": 10000.0,
+ "status": {
+  "checked_at": "2026-10-20T21:51:39Z",
+  "message": "Market closed (after the close). No trades. Open positions: 0.",
+  "ny_time": "2026-10-20 17:51 EDT",
+  "state": "market_closed"
+ },
+ "version": "stock_bot v1 (orb15_v1)"
+}

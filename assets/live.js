@@ -1,5 +1,5 @@
 /* Live layer: refreshes every 60s.
-   - data/market.json + data/headlines.json come from a GitHub Actions workflow (~every 15 min); fetched cache-busted.
+   - data/market.json + data/headlines.json come from a GitHub Actions workflow (~every 5 min); fetched cache-busted.
    - Crypto prices are fetched straight from CoinGecko in the browser (CORS allowed). */
 (function(){
 const BASE=document.currentScript.dataset.base||"./";
