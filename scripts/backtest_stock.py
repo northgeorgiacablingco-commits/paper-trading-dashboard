@@ -42,7 +42,10 @@ def backtest(name, D5, D1=None, days=None, step_end=(11, 35)):
     return dict(strategy=name, days=len(days), trades=len(C), wins=sum(c["pnl"] > 0 for c in C), win_rate=round(sum(c["pnl"] > 0 for c in C) / len(C), 3) if C else None,
                 avg_R=round(sum(c["R"] or 0 for c in C) / len(C), 3) if C else None, net_pnl=round(sum(c["pnl"] for c in C), 2),
                 profit_factor=round(gw / gl, 2) if gl else None, max_drawdown_pct=round(mdd * 100, 2), signal_rows=skips,
-                open_left=len(p["open"]), skip_reasons=why.most_common(40), trades_detail=[(c["opened"][:16], c["sym"], c["side"], c["pnl"], c["R"], c["exit_reason"]) for c in C])
+                open_left=len(p["open"]),
+                avg_risk_pct=round(sum((c.get("risk0") or 0) for c in C) / len(C) / p["start"] * 100, 3) if C else None,
+                median_risk_pct=round(sorted((c.get("risk0") or 0) for c in C)[len(C) // 2] / p["start"] * 100, 3) if C else None,
+                avg_notional_x=round(sum(c["entry"] * c["qty0"] for c in C) / len(C) / p["start"], 2) if C else None, skip_reasons=why.most_common(40), trades_detail=[(c["opened"][:16], c["sym"], c["side"], c["pnl"], c["R"], c["exit_reason"]) for c in C])
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--days", type=int, default=60); ap.add_argument("--one-min", action="store_true"); a = ap.parse_args()

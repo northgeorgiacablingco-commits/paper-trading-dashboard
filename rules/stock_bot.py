@@ -12,7 +12,7 @@ Strategies (each tagged on every trade, with its own daily caps; all share the a
   liquidity_reversal our TJR-inspired emulation on SPY/QQQ (rules/stock_strategies.py). 2 trades/day, done after a loss.
   If two strategies signal the same ticker in one run, the first in STRATEGY_ORDER wins and the other is logged as skipped.
 AGGRESSIVE paper risk profile (matches crypto): 2% risk/trade, max 8% open risk, -$400 daily stop, no new trades at +$600/day,
-half size after 2 account losses, stop after 3, max 3 open, per-strategy entry caps (ORB 4/day, TJR 1, LR 2), 1x notional per position, total notional <= 2x equity.
+half size after 2 account losses, stop after 3, max 3 open, per-strategy entry caps (ORB 4/day, TJR 1, LR 2), day-trade margin (Joey 2026-10-20 22:15Z): position notional <= 4x equity, total notional <= 4x equity (was 1x / 2x); flat by 15:55 so no overnight margin; no margin interest simulated intraday.
 Fills: simulated at last price +/- 2 bps slippage, $0 commission. Shorts are simulated (no borrow fee / locate modeled)."""
 import csv, json, math, os, sys, urllib.request, urllib.parse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -42,8 +42,9 @@ DAILY_STOP = 400.0         # no new trades once day P&L <= -$400 (and open posit
 PROFIT_LOCK = 600.0        # no new trades once day P&L >= +$600
 MAX_OPEN = 3
 MAX_ENTRIES_DAY = 4       # orb15_v1 cap (account cap from the base spec); TJR/LR have their own caps below
-POS_NOTIONAL_MAX = 1.0     # each position <= 1x equity notional (no leverage per position)
-TOTAL_NOTIONAL_MAX = 2.0   # all open positions <= 2x equity (Reg-T-like intraday buying power)
+# Day-trade margin approved by Joey 2026-10-20 22:15Z ("Yes, allow day-trade margin on the paper stock bot"), paper only, 1-week paper evaluation.
+POS_NOTIONAL_MAX = 4.0     # each position <= 4x equity notional (was 1x)
+TOTAL_NOTIONAL_MAX = 4.0   # all open positions <= 4x equity, Reg-T-style day-trade buying power (was 2x). No intraday margin interest.
 SLIPPAGE_BPS = 2.0         # adverse slippage on every fill
 COMMISSION = 0.0
 STALE_SEC = 15 * 60        # data older than 15 min during market hours = no trade
@@ -166,7 +167,7 @@ def equity(p, prices):
     return p["cash"] + sum(unrealized(x, prices.get(x["sym"], x.get("last", x["entry"]))) for x in p["open"])
 
 def size_position(eq, entry, stop_dist, risk_pct, open_notional, open_risk):
-    """Shares limited by $ risk, 1x equity per position, 2x equity total notional, 8% open risk."""
+    """Shares limited by $ risk (2%), 8% open risk, POS_NOTIONAL_MAX x equity per position, TOTAL_NOTIONAL_MAX x equity in total."""
     risk_d = eq * risk_pct
     room_risk = max(0.0, eq * OPEN_RISK_MAX - open_risk)
     risk_d = min(risk_d, room_risk)
@@ -282,7 +283,7 @@ RULES = dict(profile="AGGRESSIVE paper (Joey 2026-10-20 'Trade both' / 'Agresivo
              strategy_caps=STRAT_CAPS, conflict_rule="one position per ticker; first strategy in order wins, the other is logged as skipped",
              risk_per_trade=RISK_PCT, half_size_after_losses=HALF_AFTER_LOSSES, stop_after_losses=STOP_AFTER_LOSSES, open_risk_max=OPEN_RISK_MAX,
              daily_stop=DAILY_STOP, profit_lock=PROFIT_LOCK, max_open=MAX_OPEN, max_entries_day=MAX_ENTRIES_DAY,
-             position_notional_max=POS_NOTIONAL_MAX, total_notional_max=TOTAL_NOTIONAL_MAX, slippage_bps=SLIPPAGE_BPS, commission=COMMISSION,
+             position_notional_max=POS_NOTIONAL_MAX, total_notional_max=TOTAL_NOTIONAL_MAX, margin="day-trade buying power 4x equity, approved Joey 2026-10-20 22:15Z, paper only; flat by 15:55 (no overnight margin); no margin interest", slippage_bps=SLIPPAGE_BPS, commission=COMMISSION,
              min_stop_cost_mult=SS.MIN_STOP_MULT, stale_after_sec=STALE_SEC,
              session="NYSE 9:30-16:00 ET trading days; ORB: no entries after 15:30, flatten 15:55 (early close: 12:30 / 12:55); TJR/LR: entries by 10:10 / 10:30, flat 11:30",
              tjr_exact=SS.TJR, liquidity_reversal=SS.LR, data_source=SOURCE)
