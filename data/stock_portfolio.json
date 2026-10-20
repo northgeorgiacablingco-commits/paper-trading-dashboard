@@ -9,6 +9,7 @@
   "losses": 0,
   "realized": 0.0,
   "start_eq": null,
+  "strat": {},
   "traded": []
  },
  "equity": 10000.0,
@@ -16,21 +17,73 @@
  "open": [],
  "rules": {
   "commission": 0.0,
+  "conflict_rule": "one position per ticker; first strategy in order wins, the other is logged as skipped",
   "daily_stop": 400.0,
-  "data_source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars, regular hours",
+  "data_source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)",
   "half_size_after_losses": 2,
+  "liquidity_reversal": {
+   "flat": "11:30",
+   "max_trades": 2,
+   "pullback_bars": 3,
+   "pullback_frac": 0.382,
+   "reject_bars": 2,
+   "stop_after_losses": 1,
+   "stop_buf_atr": 0.05,
+   "sweep_buf_atr": 0.05,
+   "tp1_R": 1.5,
+   "window": [
+    "09:30",
+    "10:30"
+   ]
+  },
   "max_entries_day": 4,
   "max_open": 3,
+  "min_stop_cost_mult": 3.0,
   "open_risk_max": 0.08,
   "position_notional_max": 1.0,
   "profile": "AGGRESSIVE paper (Joey 2026-10-20 'Trade both' / 'Agresivo')",
   "profit_lock": 600.0,
   "risk_per_trade": 0.02,
-  "session": "NYSE 9:30-16:00 ET trading days; no entries after 15:30; flatten 15:55 (early close: 12:30 / 12:55)",
+  "session": "NYSE 9:30-16:00 ET trading days; ORB: no entries after 15:30, flatten 15:55 (early close: 12:30 / 12:55); TJR/LR: entries by 10:10 / 10:30, flat 11:30",
   "slippage_bps": 2.0,
   "stale_after_sec": 900,
   "stop_after_losses": 3,
-  "strategy": "orb15_v1",
+  "strategies": [
+   "tjr_exact",
+   "liquidity_reversal",
+   "orb15_v1"
+  ],
+  "strategy_caps": {
+   "liquidity_reversal": {
+    "entries": 2,
+    "loss_stop": 1
+   },
+   "orb15_v1": {
+    "entries": 4,
+    "loss_stop": null
+   },
+   "tjr_exact": {
+    "entries": 1,
+    "loss_stop": 1
+   }
+  },
+  "tjr_exact": {
+   "entry": [
+    "09:50",
+    "10:10"
+   ],
+   "flat": "11:30",
+   "k": 2,
+   "max_trades": 1,
+   "no_new_after": "10:30",
+   "stop_after_losses": 1,
+   "sweep": [
+    "09:30",
+    "09:50"
+   ],
+   "sweep_buf_atr": 0.05,
+   "tp1_min_R": 1.5
+  },
   "total_notional_max": 2.0,
   "universe": [
    "SPY",
@@ -47,11 +100,12 @@
   ]
  },
  "start": 10000.0,
+ "stats": {},
  "status": {
-  "checked_at": "2026-10-20T22:07:45Z",
+  "checked_at": "2026-10-20T22:08:11Z",
   "message": "Market closed (after the close). No trades. Open positions: 0.",
-  "ny_time": "2026-10-20 18:07 EDT",
+  "ny_time": "2026-10-20 18:08 EDT",
   "state": "market_closed"
  },
- "version": "stock_bot v1 (orb15_v1)"
+ "version": "stock_bot v2 (orb15_v1 + tjr_exact + liquidity_reversal)"
 }
