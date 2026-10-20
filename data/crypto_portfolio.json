@@ -19,7 +19,7 @@
    "entry_fee": 4.732323194565741,
    "cost_rate": 0.005,
    "thesis": "[MEME sleeve] MEME-BREAKOUT (momentum rank score 25.24: 24h +3.27%, 7d +3.16%, vol surge 4.11x): 1h close 0.7094 above EMA20 0.70300456 and EMA50 0.69768202, pulled back to EMA20 and bounced on a green candle. Stop min(12%, breakout-candle low), sell 50% at 2R then breakeven + trail, time stop 6h, cost 0.5%/side, size x0.5. Invalid on a 1h close back below the breakout level.",
-   "last_price": 0.7287,
+   "last_price": 0.73,
    "qty0": 1327.9986514847035,
    "risk_ps": 0.008099999999999996,
    "hi": 0.735,
@@ -49,7 +49,7 @@
    "entry_fee": 2.0383203560011807,
    "cost_rate": 0.002,
    "thesis": "[ALTS sleeve] BREAKOUT (momentum rank score 91.92: 24h +23.30%, 7d +22.99%, vol surge 52.44x): 1h close 0.21843 above EMA20 0.19754931 and EMA50 0.1902903, fresh close above prior 24h high 0.20657. Stop 1.5xATR(0.00646357), sell 50% at 2R then breakeven + trail, time stop 24h, cost 0.2%/side, size x0.5. Invalid on a 1h close back below EMA20.",
-   "last_price": 0.21826,
+   "last_price": 0.21756,
    "qty0": 4705.2639796887825,
    "risk_ps": 0.009695357142857158,
    "hi": 0.22014,
@@ -3966,6 +3966,10 @@
   {
    "t": "2026-10-20T16:07:17Z",
    "equity": 9579.65
+  },
+  {
+   "t": "2026-10-20T16:12:12Z",
+   "equity": 9577.22
   }
  ],
  "day": {
@@ -3976,6 +3980,36 @@
   "realized": -47.2
  },
  "runs": [
+  {
+   "t": "2026-10-20T16:12:12Z",
+   "notes": [
+    "SCAN: 98 coins ranked (universe 113), 2 signal(s), 29.0s. Leaders: BAT +20.9%/7d +16.2%, WLD +10.3%/7d +11.7%, COMP +14.8%/7d +7.3%, BNB +1.4%/7d -1.4%, BEAM +4.0%/7d +12.3%, PEPE +10.2%/7d +7.3%, CAKE +1.9%/7d -3.8%, 1INCH +1.9%/7d -3.3%, AXS +4.4%/7d -8.7%, CHZ +0.5%/7d -6.5%",
+    "PROFILE: AGGRESSIVE_PAPER_PROFILE (Joey 2026-10-18 20:30Z, paper only, 1-week eval): risk 2%/1.5%/1%, open risk cap 8%, daily stop -$400, profit lock +$600, volume gate 35%, per-coin caps 60%/25%/12% (COIN_MAX 60%, raised 20:41Z)",
+    "DERIVS BTC: funding +0.0009%/h (+0.0072%/8h), OI 173,131 contracts [Coinbase Derivatives]",
+    "DERIVS ETH: funding +0.0014%/h (+0.0112%/8h), OI 236,195 contracts [Coinbase Derivatives]",
+    "DERIVS SOL: funding -0.0003%/h (-0.0024%/8h), OI 34,586 contracts [Coinbase Derivatives]",
+    "DERIVS XRP: funding +0.0007%/h (+0.0056%/8h), OI 41,509 contracts [Coinbase Derivatives]",
+    "HALF SIZE: 2 losses today (>= 2)",
+    "REGIME: normal (BTC 1h close 82514.42 vs EMA50 81871.84, 24h range 2.74%)",
+    "Universe: 250 CoinGecko top coins -> 113 liquid Coinbase USD pairs (vol >= $2M, no stables/wrapped)",
+    "Market-volume baseline: 7-day median $53.4B from 134/137 readings (3 rejected as >3x median or invalid); now $53.6B, gate 35% = $18.7B",
+    "PONS: skipped, only 14 days listed",
+    "WATCH FLUID: uptrend, 0.5% below 24h high 2.394",
+    "WATCH ASTER: uptrend, 0.57% below 24h high 0.7175",
+    "WATCH FLOKI: uptrend, 0.78% below 24h high 2.465e-05",
+    "WATCH COMP: uptrend, 0.86% below 24h high 24.67",
+    "WATCH BNB: uptrend, 0.96% below 24h high 740.73",
+    "BTC: uptrend, no trigger (close 82514.42, EMA20 81919.16, EMA50 81871.84, 24h high 83344.25)",
+    "ETH: uptrend, no trigger (close 2438.7, EMA20 2406.36, EMA50 2405.32, 24h high 2475.2)",
+    "SOL: uptrend, no trigger (close 105.76, EMA20 104.87, EMA50 104.52, 24h high 108.26)",
+    "DOGE: uptrend, no trigger (close 0.08055, EMA20 0.07960671, EMA50 0.07943287, 24h high 0.08195)",
+    "ADA: trend filter fails, no trigger (close 0.22126, EMA20 0.21833974, EMA50 0.21862867, 24h high 0.22646)",
+    "AVAX: trend filter fails, no trigger (close 9.622, EMA20 9.5653, EMA50 9.6176, 24h high 9.908)",
+    "XRP: uptrend, no trigger (close 1.3209, EMA20 1.3051, EMA50 1.3022, 24h high 1.3448)",
+    "LINK: uptrend, no trigger (close 12.193, EMA20 12.0374, EMA50 12.0246, 24h high 12.457)",
+    "SLEEVES: core $6,597.61 (-402.39), alts $2,012.37 (+12.37), meme $967.24 (-32.76)"
+   ]
+  },
   {
    "t": "2026-10-20T16:07:17Z",
    "notes": [
@@ -5500,40 +5534,10 @@
     "LINK: trend filter fails, no trigger (close 11.929, EMA20 11.9681, EMA50 11.9992, 24h high 12.138)",
     "SLEEVES: core $6,597.61 (-402.39), alts $1,928.92 (-71.08), meme $952.15 (-47.85)"
    ]
-  },
-  {
-   "t": "2026-10-20T12:02:15Z",
-   "notes": [
-    "SCAN: 96 coins ranked (universe 110), 1 signal(s), 29.4s. Leaders: BEAM +12.7%/7d +16.6%, BNB +0.3%/7d -1.5%, WLD +8.9%/7d +7.5%, BAT +10.8%/7d +15.8%, CAKE -0.2%/7d -5.3%, 1INCH -1.2%/7d -5.3%, CHZ -1.8%/7d -8.0%, TIA +6.9%/7d +8.1%, PEPE +2.8%/7d +2.9%, COMP +6.5%/7d -1.3%",
-    "PROFILE: AGGRESSIVE_PAPER_PROFILE (Joey 2026-10-18 20:30Z, paper only, 1-week eval): risk 2%/1.5%/1%, open risk cap 8%, daily stop -$400, profit lock +$600, volume gate 35%, per-coin caps 60%/25%/12% (COIN_MAX 60%, raised 20:41Z)",
-    "DERIVS BTC: funding +0.0006%/h (+0.0048%/8h), OI 173,131 contracts [Coinbase Derivatives]",
-    "DERIVS ETH: funding +0.0010%/h (+0.0080%/8h), OI 236,195 contracts [Coinbase Derivatives]",
-    "DERIVS SOL: funding +0.0005%/h (+0.0040%/8h), OI 34,586 contracts [Coinbase Derivatives]",
-    "DERIVS XRP: funding +0.0004%/h (+0.0032%/8h), OI 41,509 contracts [Coinbase Derivatives]",
-    "HALF SIZE: 2 losses today (>= 2)",
-    "REGIME: risk-off (BTC 1h close 81386.96 vs EMA50 81792.44, 24h range 1.97%)",
-    "Universe: 250 CoinGecko top coins -> 110 liquid Coinbase USD pairs (vol >= $2M, no stables/wrapped)",
-    "Market-volume baseline: 7-day median $53.7B from 130/133 readings (3 rejected as >3x median or invalid); now $45.3B, gate 35% = $18.8B",
-    "PONS: skipped, only 14 days listed",
-    "WATCH XTZ: uptrend, -0.13% below 24h high 0.3075",
-    "WATCH TIA: uptrend, 0.2% below 24h high 0.6498",
-    "WATCH BNB: uptrend, 0.69% below 24h high 732.85",
-    "WATCH SNX: uptrend, 0.86% below 24h high 0.21744",
-    "WATCH PEPE: uptrend, 0.95% below 24h high 4.23e-06",
-    "BTC: trend filter fails, no trigger (close 81386.96, EMA20 81702.43, EMA50 81792.44, 24h high 82683.71)",
-    "ETH: trend filter fails, no trigger (close 2381.34, EMA20 2394.76, EMA50 2401.3, 24h high 2427.33)",
-    "SOL: trend filter fails, no trigger (close 103.98, EMA20 104.41, EMA50 104.31, 24h high 105.56)",
-    "DOGE: trend filter fails, no trigger (close 0.07897, EMA20 0.07918447, EMA50 0.07926098, 24h high 0.08)",
-    "ADA: trend filter fails, no trigger (close 0.21608, EMA20 0.21704721, EMA50 0.21824757, 24h high 0.22041)",
-    "XRP: trend filter fails, no trigger (close 1.2959, EMA20 1.2984, EMA50 1.2995, 24h high 1.314)",
-    "LINK: trend filter fails, no trigger (close 11.92, EMA20 11.9672, EMA50 11.9988, 24h high 12.138)",
-    "AVAX: trend filter fails, no trigger (close 9.41, EMA20 9.5269, EMA50 9.6142, 24h high 9.774)",
-    "SLEEVES: core $6,597.61 (-402.39), alts $1,930.69 (-69.31), meme $952.15 (-47.85)"
-   ]
   }
  ],
- "equity": 9579.65,
- "updated": "2026-10-20T16:07:17Z",
+ "equity": 9577.22,
+ "updated": "2026-10-20T16:12:12Z",
  "sleeves": {
   "core": {
    "alloc": 7000.0,
@@ -5546,135 +5550,153 @@
   "alts": {
    "alloc": 2000.0,
    "cash": 988.6930773501313,
-   "equity": 2015.66,
-   "pnl": 15.66,
+   "equity": 2012.37,
+   "pnl": 12.37,
    "open": 1,
    "closed": 3
   },
   "meme": {
    "alloc": 1000.0,
    "cash": 482.52131210215094,
-   "equity": 966.38,
-   "pnl": -33.62,
+   "equity": 967.24,
+   "pnl": -32.76,
    "open": 1,
    "closed": 4
   }
  },
  "scan": {
-  "t": "2026-10-20T16:07:17Z",
+  "t": "2026-10-20T16:12:12Z",
   "scanned": 98,
-  "universe": 112,
+  "universe": 113,
   "leaders": [
+   {
+    "sym": "BAT",
+    "sleeve": "alts",
+    "name": "Basic Attention",
+    "p24": 20.93,
+    "p7": 16.17,
+    "surge": 55.75,
+    "score": 87.02,
+    "image": "https://coin-images.coingecko.com/coins/images/677/large/basic-attention-token.png?1696501867"
+   },
    {
     "sym": "WLD",
     "sleeve": "alts",
     "name": "Worldcoin",
-    "p24": 11.22,
+    "p24": 10.26,
     "p7": 11.71,
-    "surge": 125.61,
-    "score": 86.8,
+    "surge": 125.31,
+    "score": 85.81,
     "image": "https://coin-images.coingecko.com/coins/images/31069/large/worldcoin.jpeg?1696529903"
    },
    {
     "sym": "COMP",
     "sleeve": "meme",
     "name": "Compound",
-    "p24": 13.88,
+    "p24": 14.8,
     "p7": 7.35,
-    "surge": 101.91,
-    "score": 84.27,
+    "surge": 104.63,
+    "score": 85.56,
     "image": "https://coin-images.coingecko.com/coins/images/10775/large/COMP.png?1696510737"
    },
    {
     "sym": "BNB",
     "sleeve": "alts",
     "name": "BNB",
-    "p24": 1.3,
+    "p24": 1.36,
     "p7": -1.43,
-    "surge": 325.99,
-    "score": 84.07,
+    "surge": 328.0,
+    "score": 84.22,
     "image": "https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png?1696501970"
-   },
-   {
-    "sym": "BAT",
-    "sleeve": "alts",
-    "name": "Basic Attention",
-    "p24": 18.23,
-    "p7": 16.17,
-    "surge": 54.17,
-    "score": 83.91,
-    "image": "https://coin-images.coingecko.com/coins/images/677/large/basic-attention-token.png?1696501867"
    },
    {
     "sym": "BEAM",
     "sleeve": "meme",
     "name": "Beam",
-    "p24": 5.04,
+    "p24": 4.02,
     "p7": 12.35,
-    "surge": 148.31,
-    "score": 83.34,
+    "surge": 147.92,
+    "score": 82.28,
     "image": "https://coin-images.coingecko.com/coins/images/32417/large/cgicon.png?1747892021"
    },
    {
     "sym": "PEPE",
     "sleeve": "meme",
     "name": "Pepe",
-    "p24": 10.13,
+    "p24": 10.21,
     "p7": 7.35,
-    "surge": 93.23,
-    "score": 79.23,
+    "surge": 94.26,
+    "score": 79.47,
     "image": "https://coin-images.coingecko.com/coins/images/29850/large/pepe-token.jpeg?1696528776"
    },
    {
     "sym": "CAKE",
     "sleeve": "alts",
     "name": "PancakeSwap",
-    "p24": 1.75,
+    "p24": 1.85,
     "p7": -3.75,
-    "surge": 186.54,
-    "score": 75.31,
+    "surge": 187.03,
+    "score": 75.44,
     "image": "https://coin-images.coingecko.com/coins/images/12632/large/pancakeswap-cake-logo_%281%29.png?1696512440"
    },
    {
     "sym": "1INCH",
     "sleeve": "meme",
     "name": "1INCH",
-    "p24": 1.83,
+    "p24": 1.86,
     "p7": -3.31,
-    "surge": 166.88,
-    "score": 74.01,
+    "surge": 167.6,
+    "score": 74.1,
     "image": "https://coin-images.coingecko.com/coins/images/13469/large/0x111111111117dc0aa78b770fa6a738034120c302_0x2b2c127f11a6604d4319c936334506b86c339a3773b6f2731db0ed4a4fb7fb72.jpg?1787890016"
    },
    {
     "sym": "AXS",
     "sleeve": "meme",
     "name": "Axie Infinity",
-    "p24": 4.54,
+    "p24": 4.38,
     "p7": -8.74,
-    "surge": 122.71,
-    "score": 69.56,
+    "surge": 123.09,
+    "score": 69.45,
     "image": "https://coin-images.coingecko.com/coins/images/13029/large/axie_infinity_logo.png?1696512817"
    },
    {
     "sym": "CHZ",
     "sleeve": "meme",
     "name": "Chiliz",
-    "p24": 0.54,
+    "p24": 0.48,
     "p7": -6.49,
-    "surge": 137.47,
-    "score": 68.32,
+    "surge": 143.03,
+    "score": 68.84,
     "image": "https://coin-images.coingecko.com/coins/images/8834/large/CHZ_Token_updated.png?1696508986"
    }
   ],
   "signals": [
+   {
+    "sym": "AWE",
+    "sleeve": "meme",
+    "name": "AWE Network",
+    "image": "https://coin-images.coingecko.com/coins/images/8713/large/awe-network.jpg?1747816016",
+    "setup": "MEME-BREAKOUT",
+    "score": 66.3,
+    "p24": 7.28,
+    "close": 0.06818,
+    "ema20": 0.06556552,
+    "ema50": 0.06441507,
+    "hi24": 0.06768,
+    "atr": 0.00090357,
+    "volx": 3.41,
+    "hi4h": 0.06768,
+    "vol15x": 2.69,
+    "action": "skipped: 15m volume 2.7x < 3x"
+   },
    {
     "sym": "SPX",
     "sleeve": "meme",
     "name": "SPX6900",
     "image": "https://coin-images.coingecko.com/coins/images/31401/large/centeredcoin_%281%29.png?1737048493",
     "setup": "MEME-BREAKOUT",
-    "score": 35.37,
-    "p24": 7.01,
+    "score": 35.83,
+    "p24": 7.23,
     "close": 0.3726,
     "ema20": 0.35985293,
     "ema50": 0.35869966,
@@ -5692,8 +5714,8 @@
     "sleeve": "meme",
     "name": "Fluid",
     "image": "https://coin-images.coingecko.com/coins/images/14688/large/Frame_1686566116_%281%29_%281%29.png?1784708239",
-    "score": 57.67,
-    "p24": 4.63,
+    "score": 57.62,
+    "p24": 4.54,
     "dist": 0.5,
     "why": "uptrend, 0.5% below 24h high 2.394",
     "close": 2.382,
@@ -5710,8 +5732,8 @@
     "sleeve": "alts",
     "name": "Aster",
     "image": "https://coin-images.coingecko.com/coins/images/69040/large/_ASTER.png?1757326782",
-    "score": 66.86,
-    "p24": 1.29,
+    "score": 66.66,
+    "p24": 1.08,
     "dist": 0.57,
     "why": "uptrend, 0.57% below 24h high 0.7175",
     "close": 0.7134,
@@ -5726,8 +5748,8 @@
     "sleeve": "meme",
     "name": "FLOKI",
     "image": "https://coin-images.coingecko.com/coins/images/16746/large/PNG_image.png?1696516318",
-    "score": 61.24,
-    "p24": 4.59,
+    "score": 60.82,
+    "p24": 4.46,
     "dist": 0.78,
     "why": "uptrend, 0.78% below 24h high 2.465e-05",
     "close": 2.446e-05,
@@ -5744,8 +5766,8 @@
     "sleeve": "meme",
     "name": "Compound",
     "image": "https://coin-images.coingecko.com/coins/images/10775/large/COMP.png?1696510737",
-    "score": 84.27,
-    "p24": 13.88,
+    "score": 85.56,
+    "p24": 14.8,
     "dist": 0.86,
     "why": "uptrend, 0.86% below 24h high 24.67",
     "close": 24.46,
@@ -5762,8 +5784,8 @@
     "sleeve": "alts",
     "name": "BNB",
     "image": "https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png?1696501970",
-    "score": 84.07,
-    "p24": 1.3,
+    "score": 84.22,
+    "p24": 1.36,
     "dist": 0.96,
     "why": "uptrend, 0.96% below 24h high 740.73",
     "close": 733.68,
@@ -5871,24 +5893,32 @@
     "name": "Akash Network",
     "image": "https://coin-images.coingecko.com/coins/images/12785/large/akash-logo.png?1696512580",
     "tag": "OPEN",
-    "price": 0.725213,
-    "p24": 5.38
+    "price": 0.729868,
+    "p24": 5.91
    },
    {
     "sym": "BAT",
     "name": "Basic Attention",
     "image": "https://coin-images.coingecko.com/coins/images/677/large/basic-attention-token.png?1696501867",
     "tag": "OPEN",
-    "price": 0.215818,
-    "p24": 18.23
+    "price": 0.220943,
+    "p24": 20.93
+   },
+   {
+    "sym": "AWE",
+    "name": "AWE Network",
+    "image": "https://coin-images.coingecko.com/coins/images/8713/large/awe-network.jpg?1747816016",
+    "tag": "SIGNAL",
+    "price": 0.068265,
+    "p24": 7.28
    },
    {
     "sym": "SPX",
     "name": "SPX6900",
     "image": "https://coin-images.coingecko.com/coins/images/31401/large/centeredcoin_%281%29.png?1737048493",
     "tag": "SIGNAL",
-    "price": 0.373829,
-    "p24": 7.01
+    "price": 0.375824,
+    "p24": 7.23
    },
    {
     "sym": "FLUID",
@@ -5896,25 +5926,17 @@
     "image": "https://coin-images.coingecko.com/coins/images/14688/large/Frame_1686566116_%281%29_%281%29.png?1784708239",
     "tag": "WATCH",
     "price": 2.38,
-    "p24": 4.63
-   },
-   {
-    "sym": "ASTER",
-    "name": "Aster",
-    "image": "https://coin-images.coingecko.com/coins/images/69040/large/_ASTER.png?1757326782",
-    "tag": "WATCH",
-    "price": 0.715088,
-    "p24": 1.29
+    "p24": 4.54
    }
   ],
-  "secs": 30.2,
+  "secs": 29.0,
   "derivs": [
    {
     "coin": "BTC",
     "src": "Coinbase Derivatives",
     "proxy": false,
     "pid": "BIP-20DEC30-CDE",
-    "perp_px": 82565.0,
+    "perp_px": 82380.0,
     "fr_1h": 9e-06,
     "oi": 173131.0,
     "oi_unit": "contracts",
@@ -5925,7 +5947,7 @@
     "src": "Coinbase Derivatives",
     "proxy": false,
     "pid": "ETP-20DEC30-CDE",
-    "perp_px": 2440.0,
+    "perp_px": 2433.0,
     "fr_1h": 1.4e-05,
     "oi": 236195.0,
     "oi_unit": "contracts",
@@ -5936,7 +5958,7 @@
     "src": "Coinbase Derivatives",
     "proxy": false,
     "pid": "SLP-20DEC30-CDE",
-    "perp_px": 105.96,
+    "perp_px": 105.58,
     "fr_1h": -3e-06,
     "oi": 34586.0,
     "oi_unit": "contracts",
@@ -5947,7 +5969,7 @@
     "src": "Coinbase Derivatives",
     "proxy": false,
     "pid": "XPP-20DEC30-CDE",
-    "perp_px": 1.3233,
+    "perp_px": 1.3184,
     "fr_1h": 7e-06,
     "oi": 41509.0,
     "oi_unit": "contracts",
@@ -5955,10 +5977,10 @@
    }
   ],
   "exposure": {
-   "notional": 1510.83,
-   "cap": 14369.48,
-   "open_risk": 64.05,
-   "risk_cap": 766.37,
+   "notional": 1508.4,
+   "cap": 14365.84,
+   "open_risk": 61.62,
+   "risk_cap": 766.18,
    "shorts": 0,
    "max_shorts": 2,
    "perp_pause_until": null
