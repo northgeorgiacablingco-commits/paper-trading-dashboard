@@ -266,6 +266,20 @@ def pos_value(o, px=None):
 def notional(o): return (o.get("last_price") or o["entry"]) * o["qty"]
 def open_risk(o): return max(0.0, o.get("sd", 1) * ((o.get("last_price") or o["entry"]) - o["stop"]) * o["qty"])
 def perp_fee(px, qty, cs, liq=False): return px * qty * ((PERP_LIQ_FEE if liq else PERP_FEE) + (0 if liq else SLIP)) + PER_CONTRACT * round(qty / cs)
+# ==== FEE RULE (approved by Joey 2026-10-21 00:54Z, paper only, 1-week evaluation through Oct 28) ====
+# NEW entries only (spot + perps): skip if stop distance < FEE_RULE_MULT x estimated round-trip cost. Open positions untouched.
+# Cost uses the same model as P&L: spot = cost_rate per side x 2 (close_pos/entry fee); perp = (PERP_FEE + SLIP) per side x 2
+# + $0.15/contract per side x 2 (perp_fee on entry and exit). Perp entry-price slippage is already inside the slipped entry the stop is measured from.
+FEE_RULE_MULT = 3.0
+def round_trip_cost_pct(inst, entry, rate=None, cs=None):
+    if inst == "perp": return 2 * (PERP_FEE + SLIP) + 2 * PER_CONTRACT / (cs * entry)
+    return 2 * rate
+def fee_rule_block(entry, stop, cost_pct):
+    """Returns a block reason (str) or None."""
+    stop_pct = abs(entry - stop) / entry
+    if stop_pct < FEE_RULE_MULT * cost_pct:
+        return f"FEE RULE: stop {stop_pct*100:.3f}% < {FEE_RULE_MULT:.0f}x round-trip cost {cost_pct*100:.3f}% (ratio {stop_pct/cost_pct:.2f}x, need >= {FEE_RULE_MULT:.0f}x)"
+    return None
 def close_perp(p, pos, px, ts, why, notes, liq=False):
     sl = pos.get("sleeve", "core"); xf = perp_fee(px, pos["qty"], pos["cs"], liq)
     gross = pos["sd"] * (px - pos["entry"]) * pos["qty"]
@@ -350,6 +364,8 @@ def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
     entry = price(s) * (1 + sd * SLIP); a = sg["a"]; stop = entry - sd * 1.5 * a
     bad = perp_precheck(side, entry, stop)
     if bad: notes.append(f"FLAG [perp {side}] {s}: {bad}"); return bad
+    fr = fee_rule_block(entry, stop, round_trip_cost_pct("perp", entry, cs=m["cs"]))
+    if fr: notes.append(f"FILTER [perp {side}] {s}: {fr}"); return fr
     lev = pick_lev(side, entry, stop, m["mmr"])
     if not lev: return "liquidation buffer: cannot keep liq >= 3x stop distance even at 1x"
     eq = equity(); mult = (0.5 if half_all else 1) * (0.5 if (not short and regime == "risk-off") else 1)
@@ -556,6 +572,8 @@ def main():
                 liq = depth2(s, entry)
                 if liq < 250000: rec["action"] = f"skipped: order-book depth +/-2% ${liq:,.0f} < $250K"; scan["signals"].append(rec); continue
             if stop <= 0 or entry <= stop: rec["action"] = "skipped: invalid stop"; scan["signals"].append(rec); continue
+            fr = fee_rule_block(entry, stop, round_trip_cost_pct("spot", entry, rate=rate))
+            if fr: rec["action"] = "skipped: " + fr; notes.append(f"FILTER [{sl}] {s}: {fr}"); scan["signals"].append(rec); continue
             target = entry + 2 * (entry - stop); eq = equity(); mult = (0.5 if half_all else 1) * (0.5 if sl == "core" and regime == "risk-off" else 1)
             risk = eq * cfg["risk"] * mult; scash = p["sleeves"][sl]["cash"]
             held = sum(notional(o) for o in p["open"] if o["coin"] == s)
@@ -596,7 +614,7 @@ def main():
     scan["exposure"] = dict(notional=round(sum(notional(o) for o in p["open"]), 2), cap=round(EXPO_MAX * eqx, 2), open_risk=round(sum(open_risk(o) for o in p["open"]), 2),
                             risk_cap=round(OPEN_RISK_MAX * eqx, 2), shorts=sum(o.get("side") == "short" for o in p["open"]), max_shorts=MAX_SHORTS, perp_pause_until=g.get("perp_pause_until"))
     for o in p["open"]: o.setdefault("side", "long"); o.setdefault("inst", "spot"); o.setdefault("lev", 1.0)
-    scan["profile"] = dict(name="AGGRESSIVE_PAPER_PROFILE" if AGGRESSIVE_PAPER_PROFILE else "conservative", approved="Joey 2026-10-18 20:30Z", risk={k: v["risk"] for k, v in SLEEVES.items()}, daily_stop=DAILY_STOP, profit_lock=DAY_PROFIT_STOP, open_risk_max=OPEN_RISK_MAX, vol_gate=VOL_GATE_PCT, loss_half=LOSS_HALF, loss_stop=LOSS_STOP)
+    scan["profile"] = dict(name="AGGRESSIVE_PAPER_PROFILE" if AGGRESSIVE_PAPER_PROFILE else "conservative", approved="Joey 2026-10-18 20:30Z", risk={k: v["risk"] for k, v in SLEEVES.items()}, daily_stop=DAILY_STOP, profit_lock=DAY_PROFIT_STOP, open_risk_max=OPEN_RISK_MAX, vol_gate=VOL_GATE_PCT, fee_rule=f"new entries need stop >= {FEE_RULE_MULT:.0f}x round-trip cost (Joey 2026-10-21 00:54Z, eval to Oct 28)", loss_half=LOSS_HALF, loss_stop=LOSS_STOP)
     scan["regime"] = regime; scan["blocks"] = blocks; scan["half_size"] = half_all; scan["meme_off"] = meme_off_why
     if blocks: notes.insert(1, "NO NEW ENTRIES: " + "; ".join(blocks))
     if not sigs: notes.append("No trade signals: no ranked coin had trend + fresh 24h-high breakout or EMA20 pullback bounce on the last closed 1h candle.")

@@ -47,4 +47,17 @@ try:
     b.manage(p,pos,t,[]); c=p["closed"][-1]; d=delta(p)
     chk(f"spot partial at 2R then stop: realized {c.get('realized')} >0, total pnl {c['pnl']} == cash delta {d:.4f}", c.get('realized',0)>0 and abs(d-c['pnl'])<0.006)
 except Exception as e: chk(f"spot partial ran ({e})",False)
+# ---- FEE RULE (Joey 2026-10-21 00:54Z): new entries need stop >= 3x round-trip cost ----
+c=b.round_trip_cost_pct("spot",4.09e-6,rate=0.005); r=b.fee_rule_block(4.09e-6,4.08e-6,c)
+chk(f"fee rule SKIP: PEPE-like meme stop 0.24% vs RT cost {c*100:.2f}% -> {r}", r is not None and "FEE RULE" in r and "ratio" in r)
+c=b.round_trip_cost_pct("spot",100,rate=0.001); r=b.fee_rule_block(100,98,c)
+chk(f"fee rule ALLOW: core spot stop 2% vs RT cost {c*100:.2f}% (ratio 10x) -> {r}", r is None and abs(c-0.002)<1e-12)
+r=b.fee_rule_block(100,99.41,c); chk(f"fee rule boundary (3x of 0.2% = 0.6%): 0.59% blocked, 0.61% allowed", r is not None and b.fee_rule_block(100,99.39,c) is None)
+cp=b.round_trip_cost_pct("perp",2500,cs=0.1); exp=2*(b.PERP_FEE+b.SLIP)+2*b.PER_CONTRACT/(0.1*2500)
+chk(f"futures RT cost = 2x(0.02%+0.03%) + 2x$0.15/contract notional = {cp*100:.4f}%", abs(cp-exp)<1e-12)
+chk("futures: ETH stop 0.12% blocked, stop 2% allowed", b.fee_rule_block(2500,2497,cp) is not None and b.fee_rule_block(2500,2450,cp) is None)
+b.price=lambda s:2500.0; nts=[]; p=acct(); p["open"]=[]
+sg=dict(a=1.0,last=dict(t=0,c=2500),setup="SHORT-BREAKDOWN",e20=2510,e50=2520)
+r=b.perp_entry(p,sg,{},"ETH",True,"risk-off",False,{"ETH":dict(fr_1h=0.0,src="t")},lambda:10000.0,t,{},nts)
+chk(f"futures integration: perp_entry blocks tiny 1.5xATR stop via fee rule, nothing opened, logged ({r})", isinstance(r,str) and "FEE RULE" in r and not p["open"] and any("FEE RULE" in n for n in nts) and abs(p["sleeves"]["core"]["cash"]-7000)<1e-9)
 print("ALL PASS" if all(R) else "FAILURES"); sys.exit(0 if all(R) else 1)
