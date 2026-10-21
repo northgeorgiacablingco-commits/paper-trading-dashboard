@@ -114,7 +114,8 @@ def prior_close(bars, d):
 # ---- Strategies (modular: add e.g. a TJR-style strategy here and select it in ACTIVE_STRATEGY) ----
 def orb15_v1(sym, bars, now, d):
     """15-min opening range breakout. Long: last CLOSED 5m bar closes above OR high, above session VWAP, above prior close.
-    Short mirror. Stop = tighter of opposite OR side or 1x ATR(14, 5m) from entry (min 0.10% of price). Target 2R.
+    Short mirror. Stop = far side of the 15-min opening range (long: OR low, short: OR high) -- stop_mode 'or_far', Joey 2026-10-21 16:52Z,
+    one-week paper test Oct 22-28 (was: tighter of OR other side or 1x ATR(14, 5m), which sat inside opening noise). Target 2R.
     Skips: OR width outside 0.15%-3% of price; price already > 1R past the OR edge (no chasing)."""
     bars = [b for b in bars if b.get("reg", True)]
     today = day_bars(bars, d)
@@ -133,11 +134,11 @@ def orb15_v1(sym, bars, now, d):
     elif px < lo and px < vw and px < pc: side, edge, other = "short", lo, hi
     else: return None, f"no breakout+trend (close {px:.2f}, OR {lo:.2f}-{hi:.2f}, VWAP {vw:.2f}, prior close {pc:.2f})"
     sd = 1 if side == "long" else -1
-    dist = max(min(abs(px - other), a), px * 0.001)
+    stop = other; dist = abs(px - other)   # or_far: stop at the far OR side; size shrinks so $ risk is unchanged (OR width >= 0.15% so dist > 0)
     if abs(px - edge) > dist: return None, f"{side} breakout already > 1R past OR edge (no chase)"
-    return dict(side=side, stop_dist=dist, signal_bar=iso(last["t"]),
+    return dict(side=side, stop=stop, stop_mode="or_far", signal_bar=iso(last["t"]),
                 reason=f"ORB15 {side}: 5m close {px:.2f} {'>' if sd > 0 else '<'} OR {'high' if sd > 0 else 'low'} {edge:.2f} (OR {lo:.2f}-{hi:.2f}, width {w*100:.2f}%), "
-                       f"{'above' if sd > 0 else 'below'} VWAP {vw:.2f} and prior close {pc:.2f}; stop dist {dist:.2f} = min(OR other side {abs(px-other):.2f}, ATR14 {a:.2f})"), None
+                       f"{'above' if sd > 0 else 'below'} VWAP {vw:.2f} and prior close {pc:.2f}; stop {stop:.2f} = OR {'low' if sd > 0 else 'high'} (dist {dist:.2f}; ATR14 {a:.2f}) [stop_mode=or_far]"), None
 
 def orb_wrap(ctx):
     sig, skips = [], []
@@ -191,7 +192,7 @@ def realize(p, pos, qty, px_fill, reason, when, info, log):
         p["open"] = [x for x in p["open"] if x is not pos]
         p["closed"].append(dict(sym=pos["sym"], side=pos["side"], strategy=pos.get("strategy"), qty0=pos["qty0"], entry=r2(pos["entry"]),
                                 stop0=r2(pos["stop0"]), target=r2(pos["target"]), opened=pos["opened"], closed=when, exit=r2(px_fill),
-                                exit_reason=reason, pnl=tot, R=R, risk0=pos.get("risk0"), entry_reason=pos.get("reason"), entry_data=pos.get("entry_data"),
+                                exit_reason=reason, pnl=tot, R=R, risk0=pos.get("risk0"), stop_mode=pos.get("stop_mode"), entry_reason=pos.get("reason"), entry_data=pos.get("entry_data"),
                                 exit_data=dict(source=info.get("source", SOURCE), as_of=info.get("as_of"), delay=info.get("delay"))))
     return pnl
 
@@ -377,7 +378,7 @@ def run(now=None, fetch=fetch_chart, fetch1=None, strategies=None):
             target = sg["target"] if sg.get("tp1") is not None else (None if name != "orb15_v1" else px + sd * 2 * risk_ps)
             if name == "orb15_v1": target = px + sd * 2 * risk_ps
             pos = dict(sym=s, side=sg["side"], strategy=name, qty=q, qty0=q, entry=px, stop=stop, stop0=stop, risk_ps=risk_ps, tp1=sg.get("tp1"),
-                       target=target, trail=sg.get("trail", True), flat_by=sg.get("flat_by"), risk0=round(risk_ps * q, 2), atr=atr([b for b in data[s]["bars"] if b.get("reg", True)]),
+                       target=target, trail=sg.get("trail", True), flat_by=sg.get("flat_by"), stop_mode=sg.get("stop_mode"), risk0=round(risk_ps * q, 2), atr=atr([b for b in data[s]["bars"] if b.get("reg", True)]),
                        best=px, seen=int(now.timestamp()) // 300 * 300 + 300,  # only bars that start after entry
                        opened=stamp, reason=sg["reason"] + (" [HALF SIZE: 2+ losses today]" if risk_pct < RISK_PCT else ""),
                        entry_data=dict(source=info["source"], as_of=info["as_of"], delay=info["delay"], signal_bar=sg.get("signal_bar")), last=info["price"])
