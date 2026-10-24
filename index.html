@@ -22,8 +22,8 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left
 <div class="card" data-sheet="pnl"><div class="label">Total P&amp;L</div><div class="val" id="pnl">—</div><div class="sub" id="pnls"></div></div>
 <div class="card" data-sheet="open-trades"><div class="label">Open Position</div><div class="val" id="op">—</div><div class="sub" id="ops"></div></div>
 <div class="card" data-sheet="trades"><div class="label">Closed Trades</div><div class="val" id="cnt">—</div><div class="sub" id="wr"></div></div></div>
-<div class="card"><h2>Equity Curve</h2><p class="help">How the paper balance changes after each closed trade. A steady climb matters more than a single spike.</p><div class="chart"><canvas id="eqC"></canvas></div></div>
-<div class="card"><h2>Stock paper bot</h2><p class="help">The automated $10,000 stock paper account (separate from the manual lab above). See the <a href="#bot">Stock Bot</a> tab for positions, trades and rules.</p></div>
+<div class="card"><h2>Equity Curve</h2><p class="help">How the stock paper bot's balance changes after each closed trade (from <code>data/stock_portfolio.json</code>). A steady climb matters more than a single spike.</p><div class="chart"><canvas id="eqC"></canvas></div></div>
+<div class="card"><h2>Stock paper bot</h2><p class="help">The cards above show this automated stock paper account (started at $10,000), read live from <code>data/stock_portfolio.json</code>. See the <a href="#bot">Stock Bot</a> tab for positions, trades and rules.</p></div>
 <div class="card note">Paper trading for skill-building only. No real money. Nothing here is financial advice or a profit promise.</div></section>
 <section class="page" id="pg-bot"><div class="card note" id="sbStatus">Loading stock paper bot…</div>
 <div class="cards"><div class="card"><div class="label">Equity</div><div class="val" id="sbEq">—</div><div class="sub" id="sbEqS">Start $10,000.00</div></div>
@@ -40,7 +40,7 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left
 <div class="card"><h2>Prices</h2><p class="help">Each card shows the latest price, the daily move and a 5-day trend line. Data refreshes about every 15 minutes.</p><div class="qgrid" id="mGrid"></div><table style="display:none"><tbody id="mT"></tbody></table><p class="note">Sources: Yahoo Finance chart API (stocks, indices, futures) and the CoinGecko simple/price API (crypto).</p></div></section>
 <section class="page" id="pg-headlines"><div class="card"><h2>Headlines</h2><p class="help">Market news from the last day, auto-refreshed from RSS feeds. Tap a headline to read the original source.</p><ul id="hl" class="md"></ul></div></section>
 <section class="page" id="pg-journal"><div class="card"><h2>Win / Loss</h2><p class="help">The share of closed trades that made or lost money. Judge it only after 50+ trades.</p><div class="chart" style="height:240px"><canvas id="wlC"></canvas></div><p class="note" id="wlN"></p></div>
-<div class="card"><h2>Journal</h2><p class="help">Every paper trade with its plan, result and lesson. PLANNED rows are ideas that haven't triggered yet.</p><table><thead><tr><th>Date</th><th>Ticker</th><th>Setup</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>R</th><th>Status</th><th>Thesis</th></tr></thead><tbody id="jT"></tbody></table></div></section>
+<div class="card"><h2>Journal</h2><p class="help">Every stock paper bot trade, newest first, from <code>data/stock_portfolio.json</code>. OPEN rows are still running.</p><table><thead><tr><th>Date</th><th>Ticker</th><th>Setup</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>R</th><th>Status</th><th>Thesis</th></tr></thead><tbody id="jT"></tbody></table></div></section>
 <section class="page" id="pg-rules"><div class="card md"><p class="help">The exact rules every paper trade must follow, plus how results get reviewed. Following rules matters more than any single result.</p><h1>Paper Day-Trading Lab (skill-building only, no real money)</h1>
 <p>Nobody reliably predicts markets. The goal here is to practice following rules and to measure results honestly. No profit is expected or promised.</p>
 <h2>Strategy: 15-min Opening Range Breakout (ORB) + VWAP filter</h2>
@@ -206,25 +206,36 @@ const $=i=>document.getElementById(i),esc=s=>String(s??"").replace(/[&<>"]/g,c=>
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const cls=n=>n>0?"pos":n<0?"neg":"";
 if(window.Chart){Chart.defaults.color="#8b949e";Chart.defaults.borderColor="#30363d";}
-const closed=D.journal.filter(r=>!["PLANNED","CANCELLED",""].includes((r.exit_reason||"").toUpperCase())&&r["pnl_$"]!=="");
-const open=D.journal.filter(r=>(r.exit_reason||"").toUpperCase()==="PLANNED");
-const pnl=closed.reduce((s,r)=>s+(+r["pnl_$"]),0),wins=closed.filter(r=>+r["pnl_$"]>0).length,start=D.state.starting_balance;
-$("bal").textContent=money(start+pnl);$("bals").textContent="Start "+money(start);$("pnl").textContent=money(pnl);$("pnl").className="val "+cls(pnl);
-$("pnls").textContent=closed.length?closed.length+" closed":"No trades yet";$("cnt").textContent=closed.length;
-$("wr").textContent="Win rate "+(closed.length?Math.round(wins/closed.length*100)+"%":"n/a");
-$("op").textContent="None";$("ops").textContent=open.length?open.length+" planned: "+open.map(r=>r.ticker).join(", ")+" (waiting for range break)":"Waiting for range break";
-let eq=[start];closed.forEach(r=>eq.push(eq.at(-1)+(+r["pnl_$"])));
+/* Overview cards, equity curve, journal and win/loss read the live stock bot account (data/stock_portfolio.json), not the old embedded manual journal. */
+let SB=null,closed=[],open=[],wins=0,eq=[];
+const sbAsOf=p=>((p.status||{}).checked_at||((p.closed||[]).at(-1)||{}).closed||"");
+const sbSrc=p=>"data/stock_portfolio.json"+(sbAsOf(p)?" · as of "+sbAsOf(p).replace("T"," ").replace(/:\d\dZ$/,"Z"):"");
+function renderOverview(p){SB=p;window.SBP=p;
+ closed=(p.closed||[]).slice().sort((a,b)=>String(a.closed).localeCompare(String(b.closed)));open=p.open||[];wins=closed.filter(t=>t.pnl>0).length;
+ const start=p.start,equity=p.equity??p.cash,pnl=equity-start;
+ $("bal").textContent=money(equity);$("bals").textContent="Start "+money(start)+" · "+sbSrc(p);$("pnl").textContent=(pnl>0?"+":"")+money(pnl);$("pnl").className="val "+cls(pnl);
+ $("pnls").textContent=closed.length?closed.length+" closed · stock bot":"No trades yet";$("cnt").textContent=closed.length;
+ $("wr").textContent="Win rate "+(closed.length?Math.round(wins/closed.length*100)+"%":"n/a");
+ $("op").textContent=open.length?open.length:"None";$("ops").textContent=open.length?open.map(x=>x.sym+" "+x.side).join(", "):"Flat · cash "+money(p.cash);
+ eq=[start];closed.forEach(t=>eq.push(eq.at(-1)+(+t.pnl||0)));
+ $("jT").innerHTML=(closed.length||open.length)?open.map(x=>`<tr><td>${esc(String(x.opened||"").slice(0,10))}</td><td>${esc(x.sym)}</td><td>${esc(x.strategy||"orb15_v1")}</td><td>${esc(x.side)}</td><td>${esc(x.entry)}</td><td></td><td></td><td></td><td>OPEN</td><td class="note">${esc(x.reason)}</td></tr>`).join("")+closed.slice().reverse().map(t=>`<tr><td>${esc(String(t.closed||"").slice(0,10))}</td><td>${esc(t.sym)}</td><td>${esc(t.strategy||"orb15_v1")}</td><td>${esc(t.side)}</td><td>${esc(t.entry)}</td><td>${esc(t.exit)}</td><td class="${cls(t.pnl)}">${esc(t.pnl)}</td><td>${esc(t.R??"")}</td><td>${esc(t.exit_reason)}</td><td class="note">${esc(t.entry_reason)}</td></tr>`).join(""):'<tr><td colspan="10" class="empty">No stock bot trades yet.</td></tr>';
+ $("wlN").textContent=closed.length?"Source: "+sbSrc(p):"No closed trades yet. The chart fills in as trades close.";
+ if(window.Chart){const e=charts.overview&&Chart.getChart($("eqC"));if(e){e.data.labels=eq.map((_,i)=>i);e.data.datasets[0].data=eq;e.update();}
+  const w=charts.journal&&Chart.getChart($("wlC"));if(w){w.data.labels=closed.length?["Wins","Losses"]:["No closed trades"];w.data.datasets[0].data=closed.length?[wins,closed.length-wins]:[1];w.data.datasets[0].backgroundColor=closed.length?["#22c55e","#ef4444"]:["#30363d"];w.update();}}
+ const pg=location.hash.slice(1)||"overview";if(!charts[pg])draw(pg);}
+function overviewFail(e){if(SB)return;["bal","pnl","op","cnt"].forEach(i=>$(i).textContent="—");$("bals").textContent="Stock bot data unavailable (data/stock_portfolio.json)";$("pnls").textContent="";$("wr").textContent="";$("ops").textContent="";
+ $("jT").innerHTML='<tr><td colspan="10" class="empty">Stock bot data unavailable. Retrying every minute.</td></tr>';$("wlN").textContent="Stock bot data unavailable.";}
+async function loadOverview(){try{const r=await fetch("data/stock_portfolio.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);const p=await r.json();if(typeof(p.equity??p.cash)!=="number"||typeof p.start!=="number")throw new Error("bad data");renderOverview(p);}catch(e){overviewFail(e);}}
 const M=D.market;$("mAs").textContent="Snapshot as of "+M.as_of+". Indices and stocks are the Oct 13 close; futures and crypto are overnight.";
 $("mT").innerHTML=M.markets.map(m=>`<tr><td>${esc(m.group)}</td><td>${esc(m.name)}</td><td>${m.price??"n/a"}</td><td class="${cls(m.change)}">${m.change>0?"+":""}${m.change??""}</td><td class="${cls(m.change_pct)}">${m.change_pct>0?"+":""}${m.change_pct}%</td><td class="note">${esc(m.as_of)}</td></tr>`).join("");
 $("hl").innerHTML=M.headlines.map(h=>`<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <span class="note">· ${esc(h.source)} · ${esc(h.time)}</span></li>`).join("");
-$("jT").innerHTML=D.journal.length?D.journal.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.ticker)}</td><td>${esc(r.setup)}</td><td>${esc(r.direction)}</td><td>${esc(r.entry_price)}</td><td>${esc(r.exit_price)}</td><td class="${cls(+r["pnl_$"])}">${esc(r["pnl_$"])}</td><td>${esc(r.R_multiple)}</td><td>${esc(r.exit_reason)}</td><td class="note">${esc(r.thesis)}</td></tr>`).join(""):'<tr><td colspan="10" class="empty">No trades logged yet.</td></tr>';
-$("wlN").textContent=closed.length?"":"No closed trades yet. The chart fills in as trades close.";
+loadOverview();setInterval(loadOverview,60000);
 $("vT").innerHTML=D.verdicts.map(v=>`<tr><td>@${esc(v.trader)}</td><td class="v-${v.verdict.replace(/ /g,"")}">${esc(v.verdict)}</td><td class="note">${esc(v.note)}</td></tr>`).join("");
 const charts={};
 function draw(p){if(!window.Chart||charts[p])return;charts[p]=1;
- if(p==="overview")new Chart($("eqC"),{type:"line",data:{labels:eq.map((_,i)=>i),datasets:[{label:"Equity ($)",data:eq,borderColor:"#22c55e",backgroundColor:"rgba(34,197,94,.1)",fill:true,pointRadius:3,tension:.2}]},options:{plugins:{legend:{display:false}},maintainAspectRatio:false,scales:{x:{title:{display:true,text:"Trade #"}}}}});
+ if(p==="overview"){if(!SB){charts[p]=0;return;}new Chart($("eqC"),{type:"line",data:{labels:eq.map((_,i)=>i),datasets:[{label:"Equity ($)",data:eq,borderColor:"#22c55e",backgroundColor:"rgba(34,197,94,.1)",fill:true,pointRadius:3,tension:.2}]},options:{plugins:{legend:{display:false}},maintainAspectRatio:false,scales:{x:{title:{display:true,text:"Trade #"}}}}});}
  if(p==="market")new Chart($("mC"),{type:"bar",data:{labels:M.markets.map(m=>m.symbol),datasets:[{label:"% change",data:M.markets.map(m=>m.change_pct),backgroundColor:M.markets.map(m=>m.change_pct>=0?"#22c55e":"#ef4444")}]},options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false}}}});
- if(p==="journal")new Chart($("wlC"),{type:"doughnut",data:{labels:closed.length?["Wins","Losses"]:["No closed trades"],datasets:[{data:closed.length?[wins,closed.length-wins]:[1],backgroundColor:closed.length?["#22c55e","#ef4444"]:["#30363d"]}]},options:{animation:false,cutout:"68%",maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,boxHeight:10,padding:12}}}}});
+ if(p==="journal"){if(!SB){charts[p]=0;return;}new Chart($("wlC"),{type:"doughnut",data:{labels:closed.length?["Wins","Losses"]:["No closed trades"],datasets:[{data:closed.length?[wins,closed.length-wins]:[1],backgroundColor:closed.length?["#22c55e","#ef4444"]:["#30363d"]}]},options:{animation:false,cutout:"68%",maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,boxHeight:10,padding:12}}}}});}
  if(p==="watchlist"){const c={};D.verdicts.forEach(v=>c[v.verdict]=(c[v.verdict]||0)+1);const col={"Red Flags":"#ef4444","Partly Verified":"#d29922","Unverifiable":"#8b949e","Verified":"#22c55e"};
   new Chart($("vC"),{type:"doughnut",data:{labels:Object.keys(c),datasets:[{data:Object.values(c),backgroundColor:Object.keys(c).map(k=>col[k])}]},options:{animation:false,cutout:"68%",maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,boxHeight:10,padding:12}}}}});}}
 function show(){window.scrollTo(0,0);const p=(location.hash.slice(1)||"overview");document.querySelectorAll(".page").forEach(s=>s.classList.toggle("on",s.id==="pg-"+p));
@@ -243,20 +254,20 @@ async function loadMarketLive(){try{const r=await fetch("data/market.json?t="+Da
 loadMarketLive();setInterval(loadMarketLive,60000);
 
 </script><link rel="stylesheet" href="./assets/sheet.css"><script>
-(function(){const J=D.journal,st=D.state.starting_balance;
-const isOpen=r=>(r.exit_reason||"").toUpperCase()==="OPEN",isPlan=r=>(r.exit_reason||"").toUpperCase()==="PLANNED";
-const C=J.filter(r=>!["PLANNED","CANCELLED","OPEN",""].includes((r.exit_reason||"").toUpperCase())&&r["pnl_$"]!==""),O=J.filter(isOpen),PL=J.filter(isPlan);
-const real=C.reduce((s,r)=>s+(+r["pnl_$"]),0),w=C.filter(r=>+r["pnl_$"]>0).length,inv=O.reduce((s,r)=>s+(+r.entry_price||0)*(+r.shares||0),0),bal=st+real;
-const sg=n=>(n>0?"+":"")+money(n),row=(a,b,c="")=>`<div class="sh-row"><span>${a}</span><span class="${c}">${b}</span></div>`;
+(function(){const P=()=>window.SBP,sgn=n=>(n>0?"+":"")+money(n),row=(a,b,c="")=>`<div class="sh-row"><span>${a}</span><span class="${c}">${b}</span></div>`;
 const tot=a=>`<div class="sh-tot">${a.map(([k,v,c])=>`<div><small>${k}</small><b class="${c||""}">${v}</b></div>`).join("")}</div>`;
-const card=(r,extra)=>`<div class="sh-tr"><div class="sh-trh"><div><div class="t">${esc(r.ticker)}</div><div class="n">${esc(r.setup)} · ${esc(r.date)}</div></div>${extra||""}</div><div class="sh-kv"><div><small>Side</small>${esc(r.direction)}</div><div><small>Entry</small>${esc(r.entry_price)}</div><div><small>Stop</small>${esc(r.stop)}</div><div><small>Target</small>${esc(r.target)}</div><div><small>Shares</small>${esc(r.shares)}</div><div><small>$ risk</small>${esc(r["risk_$"])}</div>${r.exit_price?`<div><small>Exit</small>${esc(r.exit_price)}</div><div><small>Reason</small>${esc(r.exit_reason)}</div>`:""}</div><div class="sh-why"><b>Plan / reason:</b> ${esc(r.thesis)}</div></div>`;
-const empty=(t,m)=>`<div class="sh-empty"><b>${t}</b>${m}</div>`;
-const planned=()=>PL.length?'<div class="sh-sec">Planned (not entered)</div>'+PL.map(r=>card(r,'<div class="pl"><span class="sh-pill">Planned</span></div>')).join(""):"";
-window.SHEETS={keys:{"open-trades":"Open Trades","balance":"Balance","pnl":"Profit & Loss","trades":"Closed Trades & Win Rate"},render(k){
- if(k==="open-trades")return tot([["Open",O.length],["Invested",money(inv)],["Open P&L","n/a"]])+(O.length?O.map(r=>card(r)).join(""):empty("No open stock positions","The stock bot waits for its opening-range break before entering. Nothing is invested right now."))+planned();
- if(k==="balance")return tot([["Balance",money(bal)],["Start",money(st)],["Total P&L",sg(real),cls(real)]])+'<div class="sh-sec">Cash vs invested</div>'+row("Cash",money(bal-inv))+row("In open trades",money(inv))+row("Strategy",esc(D.state.strategy_version||""))+row("Last updated",esc(D.state.last_updated||""))+'<p class="sh-note">Paper money only. Fees are not modeled for the stock account.</p>';
- if(k==="pnl")return tot([["Total",sg(real),cls(real)],["Realized",sg(real),cls(real)],["Closed",C.length]])+'<div class="sh-sec">Risk limits</div>'+row("Max risk per trade","$100 (1%)")+row("Trades logged",J.length);
- if(k==="trades")return tot([["Closed",C.length],["Wins",w],["Win rate",C.length?Math.round(w/C.length*100)+"%":"n/a"]])+(C.length?C.slice().reverse().map(r=>card(r,`<div class="pl ${cls(+r["pnl_$"])}">${sg(+r["pnl_$"])}<div class="n">${esc(r.R_multiple)}R</div></div>`)).join(""):empty("No closed trades yet","The win rate starts counting after the first stock trade closes."));}};})();
+const empty=(t,m)=>`<div class="sh-empty"><b>${t}</b>${m}</div>`,asOf=p=>((p.status||{}).checked_at||((p.closed||[]).at(-1)||{}).closed||"n/a");
+const kv=a=>`<div class="sh-kv">${a.filter(x=>x[1]!==undefined&&x[1]!==null&&x[1]!=="").map(([k,v])=>`<div><small>${k}</small>${esc(v)}</div>`).join("")}</div>`;
+const oCard=x=>`<div class="sh-tr"><div class="sh-trh"><div><div class="t">${esc(x.sym)}</div><div class="n">${esc(x.strategy||"orb15_v1")} · ${esc(x.opened)}</div></div></div>${kv([["Side",x.side],["Entry",x.entry],["Stop",x.stop],["Target",x.target??"trail / time exit"],["Shares",x.qty],["Last",x.last]])}</div>`;
+const cCard=t=>`<div class="sh-tr"><div class="sh-trh"><div><div class="t">${esc(t.sym)}</div><div class="n">${esc(t.strategy||"orb15_v1")} · ${esc(t.closed)}</div></div><div class="pl ${cls(t.pnl)}">${sgn(t.pnl)}<div class="n">${esc(t.R??"")}R</div></div></div>${kv([["Side",t.side],["Entry",t.entry],["Exit",t.exit],["Stop",t.stop0],["Shares",t.qty0],["$ risk",t.risk0],["Reason",t.exit_reason]])}</div>`;
+window.SHEETS={keys:{"open-trades":"Open Trades","balance":"Balance","pnl":"Profit & Loss","trades":"Closed Trades & Win Rate"},render(k){const p=P();
+ if(!p)return empty("Stock bot data unavailable","Could not load data/stock_portfolio.json. Values show — until it loads.");
+ const O=p.open||[],C=(p.closed||[]).slice().sort((a,b)=>String(a.closed).localeCompare(String(b.closed))),eqv=p.equity??p.cash,tp=eqv-p.start,real=C.reduce((s,t)=>s+(+t.pnl||0),0),w=C.filter(t=>t.pnl>0).length;
+ const inv=O.reduce((s,x)=>s+(+x.entry||0)*(+x.qty||0),0),src='<p class="sh-note">Source: data/stock_portfolio.json (stock paper bot) · as of '+esc(asOf(p))+'. Paper money only.</p>';
+ if(k==="open-trades")return tot([["Open",O.length],["Invested",money(inv)],["Open P&L",sgn(tp-real),cls(tp-real)]])+(O.length?O.map(oCard).join(""):empty("No open stock positions","The stock bot is flat. Everything closes by 15:55 ET."))+src;
+ if(k==="balance")return tot([["Balance",money(eqv)],["Start",money(p.start)],["Total P&L",sgn(tp),cls(tp)]])+'<div class="sh-sec">Cash vs invested</div>'+row("Cash",money(p.cash))+row("In open trades",money(inv))+row("Strategy",esc(p.version||""))+row("Last updated",esc(asOf(p)))+src;
+ if(k==="pnl")return tot([["Total",sgn(tp),cls(tp)],["Realized",sgn(real),cls(real)],["Closed",C.length]])+'<div class="sh-sec">Today</div>'+row("Date",esc((p.day||{}).date||"n/a"))+row("Realized today",sgn(+((p.day||{}).realized)||0))+row("Entries today",(p.day||{}).entries||0)+src;
+ if(k==="trades")return tot([["Closed",C.length],["Wins",w],["Win rate",C.length?Math.round(w/C.length*100)+"%":"n/a"]])+(C.length?C.slice().reverse().map(cCard).join(""):empty("No closed trades yet","The win rate starts counting after the first stock trade closes."))+src;}};})();
 </script><script src="./assets/sheet.js"></script>
 <script>
 (function(){const $=i=>document.getElementById(i),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
