@@ -280,6 +280,19 @@ def fee_rule_block(entry, stop, cost_pct):
     if stop_pct < FEE_RULE_MULT * cost_pct:
         return f"FEE RULE: stop {stop_pct*100:.3f}% < {FEE_RULE_MULT:.0f}x round-trip cost {cost_pct*100:.3f}% (ratio {stop_pct/cost_pct:.2f}x, need >= {FEE_RULE_MULT:.0f}x)"
     return None
+# ==== WEEKEND CORE-SHORT SKIP TEST (approved by Joey 2026-10-24 19:57Z, widget t78s315, paper only, 1-week test through Oct 31) ====
+# NEW core perp SHORT entries only: skip when the entry time is Saturday or Sunday UTC. Longs, open positions (stops, partials,
+# trails), risk, sizing and caps unchanged. Baseline (2-month BTC/ETH/SOL replay Aug 22-Oct 24): weekend shorts -0.91R/20 trades,
+# 10% win; weekday shorts +0.02R/87. Skips are logged as "weekend_short_skip" and kept in p["weekend_short_skips"] for the review.
+SKIP_WEEKEND_CORE_SHORTS = True
+WEEKEND_SKIP_START = datetime(2026, 10, 24, 19, 57, tzinfo=timezone.utc)
+WEEKEND_SKIP_END = datetime(2026, 11, 1, 0, 0, tzinfo=timezone.utc)      # exclusive: covers Sat Oct 31 UTC
+def weekend_short_block(short, t):
+    """Returns 'weekend_short_skip: ...' for a new short when t is Sat/Sun UTC inside the test window, else None."""
+    if not (SKIP_WEEKEND_CORE_SHORTS and short): return None
+    tu = t.astimezone(timezone.utc)
+    if not (WEEKEND_SKIP_START <= tu < WEEKEND_SKIP_END) or tu.weekday() < 5: return None
+    return f"weekend_short_skip: new core shorts paused {tu.strftime('%a')} UTC (paper test, Joey 2026-10-24 19:57Z, through Oct 31)"
 def close_perp(p, pos, px, ts, why, notes, liq=False):
     sl = pos.get("sleeve", "core"); xf = perp_fee(px, pos["qty"], pos["cs"], liq)
     gross = pos["sd"] * (px - pos["entry"]) * pos["qty"]
@@ -366,6 +379,13 @@ def perp_entry(p, sg, u, s, short, regime, half_all, dv, equity, t, rec, notes):
     if bad: notes.append(f"FLAG [perp {side}] {s}: {bad}"); return bad
     fr = fee_rule_block(entry, stop, round_trip_cost_pct("perp", entry, cs=m["cs"]))
     if fr: notes.append(f"FILTER [perp {side}] {s}: {fr}"); return fr
+    wk = weekend_short_block(short, t)
+    if wk:
+        bar = sg["last"]["t"] + 3600; rec.update(hyp_entry=r2(entry), hyp_stop=r2(stop), entry_bar=iso(bar))
+        log = p.setdefault("weekend_short_skips", [])
+        if not any(x["coin"] == s and x["entry_bar"] == iso(bar) for x in log):
+            log.append(dict(t=iso(int(t.timestamp())), coin=s, setup=sg["setup"], entry_bar=iso(bar), hyp_entry=r2(entry), hyp_stop=r2(stop), regime=regime))
+        notes.append(f"FILTER [perp {side}] {s}: {wk} (hypothetical entry {r2(entry)}, stop {r2(stop)})"); return wk
     lev = pick_lev(side, entry, stop, m["mmr"])
     if not lev: return "liquidation buffer: cannot keep liq >= 3x stop distance even at 1x"
     eq = equity(); mult = (0.5 if half_all else 1) * (0.5 if (not short and regime == "risk-off") else 1)
@@ -614,7 +634,7 @@ def main():
     scan["exposure"] = dict(notional=round(sum(notional(o) for o in p["open"]), 2), cap=round(EXPO_MAX * eqx, 2), open_risk=round(sum(open_risk(o) for o in p["open"]), 2),
                             risk_cap=round(OPEN_RISK_MAX * eqx, 2), shorts=sum(o.get("side") == "short" for o in p["open"]), max_shorts=MAX_SHORTS, perp_pause_until=g.get("perp_pause_until"))
     for o in p["open"]: o.setdefault("side", "long"); o.setdefault("inst", "spot"); o.setdefault("lev", 1.0)
-    scan["profile"] = dict(name="AGGRESSIVE_PAPER_PROFILE" if AGGRESSIVE_PAPER_PROFILE else "conservative", approved="Joey 2026-10-18 20:30Z", risk={k: v["risk"] for k, v in SLEEVES.items()}, daily_stop=DAILY_STOP, profit_lock=DAY_PROFIT_STOP, open_risk_max=OPEN_RISK_MAX, vol_gate=VOL_GATE_PCT, fee_rule=f"new entries need stop >= {FEE_RULE_MULT:.0f}x round-trip cost (Joey 2026-10-21 00:54Z, eval to Oct 28)", loss_half=LOSS_HALF, loss_stop=LOSS_STOP)
+    scan["profile"] = dict(name="AGGRESSIVE_PAPER_PROFILE" if AGGRESSIVE_PAPER_PROFILE else "conservative", approved="Joey 2026-10-18 20:30Z", risk={k: v["risk"] for k, v in SLEEVES.items()}, daily_stop=DAILY_STOP, profit_lock=DAY_PROFIT_STOP, open_risk_max=OPEN_RISK_MAX, vol_gate=VOL_GATE_PCT, fee_rule=f"new entries need stop >= {FEE_RULE_MULT:.0f}x round-trip cost (Joey 2026-10-21 00:54Z, eval to Oct 28)", weekend_short_skip=(f"new core shorts skipped Sat/Sun UTC {iso(int(WEEKEND_SKIP_START.timestamp()))} to {iso(int(WEEKEND_SKIP_END.timestamp()))} (Joey 2026-10-24 19:57Z)" if SKIP_WEEKEND_CORE_SHORTS else "off"), weekend_short_skips=len(p.get("weekend_short_skips", [])), loss_half=LOSS_HALF, loss_stop=LOSS_STOP)
     scan["regime"] = regime; scan["blocks"] = blocks; scan["half_size"] = half_all; scan["meme_off"] = meme_off_why
     if blocks: notes.insert(1, "NO NEW ENTRIES: " + "; ".join(blocks))
     if not sigs: notes.append("No trade signals: no ranked coin had trend + fresh 24h-high breakout or EMA20 pullback bounce on the last closed 1h candle.")

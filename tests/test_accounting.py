@@ -60,4 +60,33 @@ b.price=lambda s:2500.0; nts=[]; p=acct(); p["open"]=[]
 sg=dict(a=1.0,last=dict(t=0,c=2500),setup="SHORT-BREAKDOWN",e20=2510,e50=2520)
 r=b.perp_entry(p,sg,{},"ETH",True,"risk-off",False,{"ETH":dict(fr_1h=0.0,src="t")},lambda:10000.0,t,{},nts)
 chk(f"futures integration: perp_entry blocks tiny 1.5xATR stop via fee rule, nothing opened, logged ({r})", isinstance(r,str) and "FEE RULE" in r and not p["open"] and any("FEE RULE" in n for n in nts) and abs(p["sleeves"]["core"]["cash"]-7000)<1e-9)
+# ---- WEEKEND CORE-SHORT SKIP TEST (Joey 2026-10-24 19:57Z): new core shorts skipped Sat/Sun UTC; longs + open positions unaffected ----
+b.vol_qty=lambda *a,**k:None; b.price=lambda s:2500.0
+SAT=datetime(2026,10,24,20,5,tzinfo=timezone.utc); MON=datetime(2026,10,26,14,5,tzinfo=timezone.utc)
+def wk_entry(short,t):
+    p=acct(); p["open"]=[]; p["day"]["entries"]=0; nts=[]; rec={}; B=int(t.timestamp())//3600*3600-3600
+    sg=dict(a=50.0,last=dict(t=B,c=2500),setup="SHORT-BREAKDOWN" if short else "BREAKOUT",e20=2510 if short else 2490,e50=2520 if short else 2480)
+    r=b.perp_entry(p,sg,dict(name="Ethereum",image=""),"ETH",short,"risk-off" if short else "normal",False,{"ETH":dict(fr_1h=0.0,src="t")},lambda:10000.0,t,rec,nts)
+    return p,r,rec,nts
+p,r,rec,nts=wk_entry(True,SAT)
+chk(f"weekend short BLOCKED (Sat UTC): {r}", isinstance(r,str) and r.startswith("weekend_short_skip") and not p["open"] and abs(p["sleeves"]["core"]["cash"]-7000)<1e-9
+    and len(p.get("weekend_short_skips",[]))==1 and rec.get("hyp_stop",0)>rec.get("hyp_entry",1e9) and any("weekend_short_skip" in n for n in nts))
+b.perp_entry(p,dict(a=50.0,last=dict(t=int(SAT.timestamp())//3600*3600-3600,c=2500),setup="SHORT-BREAKDOWN",e20=2510,e50=2520),dict(name="E",image=""),"ETH",True,"risk-off",False,{"ETH":dict(fr_1h=0.0,src="t")},lambda:10000.0,SAT,{},[])
+chk("weekend skip log dedupes the same coin + entry bar across runs", len(p["weekend_short_skips"])==1)
+p,r,rec,nts=wk_entry(True,datetime(2026,10,25,23,59,tzinfo=timezone.utc))
+chk(f"weekend short BLOCKED (Sun 23:59 UTC): {r}", isinstance(r,str) and r.startswith("weekend_short_skip"))
+p,r,rec,nts=wk_entry(True,MON)
+chk(f"weekday short ALLOWED (Mon UTC): opened={r is True}", r is True and len(p["open"])==1 and p["open"][0]["side"]=="short" and "weekend_short_skips" not in p)
+p,r,rec,nts=wk_entry(False,SAT)
+chk(f"weekend long ALLOWED (Sat UTC): opened={r is True}", r is True and len(p["open"])==1 and p["open"][0]["side"]=="long")
+chk("window: before start (Sat 19:00Z Oct 24) and after end (Sat Nov 7) not blocked; Sat Oct 31 blocked",
+    b.weekend_short_block(True,datetime(2026,10,24,19,0,tzinfo=timezone.utc)) is None and b.weekend_short_block(True,datetime(2026,11,7,12,0,tzinfo=timezone.utc)) is None
+    and b.weekend_short_block(True,datetime(2026,10,31,12,0,tzinfo=timezone.utc)) is not None and b.weekend_short_block(False,SAT) is None)
+# open short still managed on a weekend: 2R partial + breakeven, then stop
+T=int(SAT.timestamp())//3600*3600
+p,pos=perp("short",2500,20); pos.update(stop=2550,risk_ps=50,hi=2500,maxR=0,seen=T-7200,entry_candle=T-7200,fund_t=T,liq=4000,risk=100)
+b.candles=lambda s:[dict(t=T-7200,o=2500,h=2505,l=2390,c=2400),dict(t=T-3600,o=2400,h=2600,l=2395,c=2590)]
+b.price=lambda s:2590.0; p["open"]=[pos]; b.manage_perp(p,pos,SAT,[],{})
+c=p["closed"][-1] if p["closed"] else {}
+chk(f"open short still managed on Saturday: partial at 2R then BE stop (realized {c.get('realized')}, pnl {c.get('pnl')})", c.get("realized",0)>0 and c.get("exit_reason")=="breakeven/trail stop" and abs(delta(p)-c["pnl"])<0.006)
 print("ALL PASS" if all(R) else "FAILURES"); sys.exit(0 if all(R) else 1)
