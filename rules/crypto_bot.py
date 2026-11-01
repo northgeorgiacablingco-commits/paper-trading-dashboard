@@ -293,6 +293,19 @@ def weekend_short_block(short, t):
     tu = t.astimezone(timezone.utc)
     if not (WEEKEND_SKIP_START <= tu < WEEKEND_SKIP_END) or tu.weekday() < 5: return None
     return f"weekend_short_skip: new core shorts paused {tu.strftime('%a')} UTC (paper test, Joey 2026-10-24 19:57Z, through Oct 31)"
+# ==== PULLBACK EMA50 ENTRY FILTER TEST "PBe50" (approved by Joey 2026-10-30 11:24 AM ET, paper only, 1-week test Nov 1-7, 2026) ====
+# NEW core long PULLBACK entries only: skip when the pullback bar's low (prev 1h bar) is at or below the 1h EMA50 computed on closes
+# through that bar (same as research/pb_e50_2026-10-30/vbt_pb.py). Applied before slot/cap checks so a skipped signal frees its slot,
+# like the replay. Sizing, stops, risk limits, BREAKOUT, shorts, alts and meme unchanged. Skips logged in p["pbe50_skips"].
+PULLBACK_EMA50_FILTER = True
+PBE50_START = datetime(2026, 11, 1, 0, 0, tzinfo=timezone.utc)
+PBE50_END = datetime(2026, 11, 8, 0, 0, tzinfo=timezone.utc)      # exclusive: covers Sat Nov 7 UTC
+def pbe50_block(sleeve, setup, pb_low, e50p, t):
+    """Returns 'pbe50_skip: ...' for a core PULLBACK long whose pullback-bar low <= 1h EMA50 inside the test window, else None."""
+    if not (PULLBACK_EMA50_FILTER and sleeve == "core" and setup == "PULLBACK"): return None
+    tu = t.astimezone(timezone.utc)
+    if not (PBE50_START <= tu < PBE50_END) or pb_low is None or e50p is None or pb_low > e50p: return None
+    return f"pbe50_skip: pullback-bar low {r2(pb_low)} <= 1h EMA50 {r2(e50p)} (paper test, Joey 2026-10-30, Nov 1-7)"
 def close_perp(p, pos, px, ts, why, notes, liq=False):
     sl = pos.get("sleeve", "core"); xf = perp_fee(px, pos["qty"], pos["cs"], liq)
     gross = pos["sd"] * (px - pos["entry"]) * pos["qty"]
@@ -526,7 +539,7 @@ def main():
             c = candles(s)
             if len(c) < 80: continue
             cl = [x["c"] for x in c]; last, prev = c[-1], c[-2]
-            e20, e50, e20p = ema(cl, 20), ema(cl, 50), ema(cl[:-1], 20)
+            e20, e50, e20p = ema(cl, 20), ema(cl, 50), ema(cl[:-1], 20); e50p = ema(cl[:-1], 50)
             hi24 = max(x["h"] for x in c[-25:-1]); a = atr(c)
             trend = last["c"] > e20 and last["c"] > e50 and e20 > e50
             brk = last["c"] > hi24 and prev["c"] <= max(x["h"] for x in c[-26:-2])
@@ -559,7 +572,7 @@ def main():
                 if dn and (bdn or frr):
                     setup = "SHORT-BREAKDOWN" if bdn else "SHORT-FAILED-RALLY"; ctx["lo24"] = r2(lo24)
                     fail = None if vx >= 1.2 else f"signal-candle volume {vx:.2f}x < 1.2x"
-            if setup: sigs.append(dict(u=u, setup=setup, a=a, e20=e20, e50=e50, hi24=hi24, last=last, ctx=ctx, fail=fail, **(sg_extra if setup == "MEME-BREAKOUT" else {})))
+            if setup: sigs.append(dict(u=u, setup=setup, a=a, e20=e20, e50=e50, e50p=e50p, pb_low=prev["l"], hi24=hi24, last=last, ctx=ctx, fail=fail, **(sg_extra if setup == "MEME-BREAKOUT" else {})))
             elif trend: watch.append(dict(sym=s, sleeve=sl, name=u["name"], image=u["image"], score=u["score"], p24=round(u["p24"], 2), dist=round((hi24 / last["c"] - 1) * 100, 2), why=f"uptrend, {round((hi24/last['c']-1)*100,2)}% below 24h high {r2(hi24)}", **ctx))
         except Exception:
             scan["errors"] += 1
@@ -567,7 +580,15 @@ def main():
     for sg in sigs:
         u = sg["u"]; s = u["sym"]; sl = u["sleeve"]; cfg = SLEEVES[sl]; rec = dict(sym=s, sleeve=sl, name=u["name"], image=u["image"], setup=sg["setup"], score=u["score"], p24=round(u["p24"], 2), **sg["ctx"])
         why = sg.get("fail")
+        pbx = None if why else pbe50_block(sl, sg["setup"], sg.get("pb_low"), sg.get("e50p"), t)
         if why: pass
+        elif pbx:
+            why = pbx; bar = sg["last"]["t"] + 3600; he, hs = r2(sg["last"]["c"]), r2(sg["last"]["c"] - 1.5 * sg["a"])
+            rec.update(hyp_entry=he, hyp_stop=hs, entry_bar=iso(bar))
+            log = p.setdefault("pbe50_skips", [])
+            if not any(x["coin"] == s and x["entry_bar"] == iso(bar) for x in log):
+                log.append(dict(t=iso(int(t.timestamp())), coin=s, setup=sg["setup"], entry_bar=iso(bar), hyp_entry=he, hyp_stop=hs, pb_low=r2(sg["pb_low"]), ema50=r2(sg["e50p"]), blocks=list(blocks)))
+            notes.append(f"FILTER [{sl}] {s}: {pbx} (hypothetical entry ~{he} at signal close, stop {hs})")
         elif blocks: why = "stand aside: " + "; ".join(blocks)
         elif sl == "meme" and meme_off_why: why = "meme sleeve off: " + meme_off_why
         elif any(o["coin"] == s for o in p["open"]): why = "already open"
@@ -634,7 +655,7 @@ def main():
     scan["exposure"] = dict(notional=round(sum(notional(o) for o in p["open"]), 2), cap=round(EXPO_MAX * eqx, 2), open_risk=round(sum(open_risk(o) for o in p["open"]), 2),
                             risk_cap=round(OPEN_RISK_MAX * eqx, 2), shorts=sum(o.get("side") == "short" for o in p["open"]), max_shorts=MAX_SHORTS, perp_pause_until=g.get("perp_pause_until"))
     for o in p["open"]: o.setdefault("side", "long"); o.setdefault("inst", "spot"); o.setdefault("lev", 1.0)
-    scan["profile"] = dict(name="AGGRESSIVE_PAPER_PROFILE" if AGGRESSIVE_PAPER_PROFILE else "conservative", approved="Joey 2026-10-18 20:30Z", risk={k: v["risk"] for k, v in SLEEVES.items()}, daily_stop=DAILY_STOP, profit_lock=DAY_PROFIT_STOP, open_risk_max=OPEN_RISK_MAX, vol_gate=VOL_GATE_PCT, fee_rule=f"new entries need stop >= {FEE_RULE_MULT:.0f}x round-trip cost (Joey 2026-10-21 00:54Z, eval to Oct 28)", weekend_short_skip=(f"new core shorts skipped Sat/Sun UTC {iso(int(WEEKEND_SKIP_START.timestamp()))} to {iso(int(WEEKEND_SKIP_END.timestamp()))} (Joey 2026-10-24 19:57Z)" if SKIP_WEEKEND_CORE_SHORTS else "off"), weekend_short_skips=len(p.get("weekend_short_skips", [])), loss_half=LOSS_HALF, loss_stop=LOSS_STOP)
+    scan["profile"] = dict(name="AGGRESSIVE_PAPER_PROFILE" if AGGRESSIVE_PAPER_PROFILE else "conservative", approved="Joey 2026-10-18 20:30Z", risk={k: v["risk"] for k, v in SLEEVES.items()}, daily_stop=DAILY_STOP, profit_lock=DAY_PROFIT_STOP, open_risk_max=OPEN_RISK_MAX, vol_gate=VOL_GATE_PCT, fee_rule=f"new entries need stop >= {FEE_RULE_MULT:.0f}x round-trip cost (Joey 2026-10-21 00:54Z, eval to Oct 28)", weekend_short_skip=(f"new core shorts skipped Sat/Sun UTC {iso(int(WEEKEND_SKIP_START.timestamp()))} to {iso(int(WEEKEND_SKIP_END.timestamp()))} (Joey 2026-10-24 19:57Z)" if SKIP_WEEKEND_CORE_SHORTS else "off"), weekend_short_skips=len(p.get("weekend_short_skips", [])), pbe50=(f"core PULLBACK longs skipped when pullback-bar low <= 1h EMA50, {iso(int(PBE50_START.timestamp()))} to {iso(int(PBE50_END.timestamp()))} (Joey 2026-10-30)" if PULLBACK_EMA50_FILTER else "off"), pbe50_skips=len(p.get("pbe50_skips", [])), loss_half=LOSS_HALF, loss_stop=LOSS_STOP)
     scan["regime"] = regime; scan["blocks"] = blocks; scan["half_size"] = half_all; scan["meme_off"] = meme_off_why
     if blocks: notes.insert(1, "NO NEW ENTRIES: " + "; ".join(blocks))
     if not sigs: notes.append("No trade signals: no ranked coin had trend + fresh 24h-high breakout or EMA20 pullback bounce on the last closed 1h candle.")
