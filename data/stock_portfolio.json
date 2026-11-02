@@ -901,7 +901,9 @@
  "day": {
   "date": "2026-11-02",
   "entries": 0,
-  "logged": [],
+  "logged": [
+   "tjr:SPY:long:smt"
+  ],
   "losses": 0,
   "realized": 0.0,
   "start_eq": 9685.05,
@@ -921,7 +923,7 @@
   },
   "traded": []
  },
- "equity": 9685.05,
+ "equity": 9691.2,
  "note": "Simulated only. No broker, no real money. Never reset (NO-RESET RULE).",
  "open": [
   {
@@ -935,9 +937,9 @@
     "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
    },
    "flat_by": null,
-   "last": 694.61,
+   "last": 694.2,
    "last_data": {
-    "as_of": "2026-11-02T14:32:47Z",
+    "as_of": "2026-11-02T14:37:43Z",
     "delay": "near real-time (lag 0s)",
     "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
    },
@@ -947,7 +949,7 @@
    "reason": "ORB15 short: 5m close 685.28 < OR low 694.05 (OR 694.05-697.41, width 0.49%), below VWAP 693.02 and prior close 715.28; stop 697.41 = OR high (dist 12.13; ATR14 1.00) [stop_mode=or_far]",
    "risk0": 196.48,
    "risk_ps": 13.098862744531289,
-   "seen": 1793390400,
+   "seen": 1793630100,
    "side": "short",
    "stop": 697.4099731445312,
    "stop0": 697.4099731445312,
@@ -1073,79 +1075,79 @@
  },
  "status": {
   "blocks": [],
-  "checked_at": "2026-11-02T14:32:46Z",
+  "checked_at": "2026-11-02T14:37:43Z",
   "data": {
    "AAPL": {
-    "as_of": "2026-11-02T14:32:46Z",
-    "delay": "near real-time (lag 0s)",
-    "price": 342.92,
+    "as_of": "2026-11-02T14:37:41Z",
+    "delay": "near real-time (lag 2s)",
+    "price": 342.75,
     "stale": false
    },
    "AMD": {
-    "as_of": "2026-11-02T14:32:46Z",
-    "delay": "near real-time (lag 0s)",
-    "price": 505.27,
+    "as_of": "2026-11-02T14:37:42Z",
+    "delay": "near real-time (lag 1s)",
+    "price": 505.51,
     "stale": false
    },
    "AMZN": {
-    "as_of": "2026-11-02T14:32:45Z",
-    "delay": "near real-time (lag 1s)",
-    "price": 245.35,
+    "as_of": "2026-11-02T14:37:41Z",
+    "delay": "near real-time (lag 2s)",
+    "price": 247.84,
     "stale": false
    },
    "GOOGL": {
-    "as_of": "2026-11-02T14:32:45Z",
+    "as_of": "2026-11-02T14:37:42Z",
     "delay": "near real-time (lag 1s)",
-    "price": 284.42,
+    "price": 284.59,
     "stale": false
    },
    "IWM": {
-    "as_of": "2026-11-02T14:32:46Z",
+    "as_of": "2026-11-02T14:37:43Z",
     "delay": "near real-time (lag 0s)",
-    "price": 281.43,
+    "price": 281.06,
     "stale": false
    },
    "META": {
-    "as_of": "2026-11-02T14:32:45Z",
+    "as_of": "2026-11-02T14:37:42Z",
     "delay": "near real-time (lag 1s)",
-    "price": 616.5,
+    "price": 614.54,
     "stale": false
    },
    "MSFT": {
-    "as_of": "2026-11-02T14:32:46Z",
+    "as_of": "2026-11-02T14:37:43Z",
     "delay": "near real-time (lag 0s)",
-    "price": 523.41,
+    "price": 523.51,
     "stale": false
    },
    "NVDA": {
-    "as_of": "2026-11-02T14:32:46Z",
+    "as_of": "2026-11-02T14:37:43Z",
     "delay": "near real-time (lag 0s)",
-    "price": 208.08,
+    "price": 207.13,
     "stale": false
    },
    "QQQ": {
-    "as_of": "2026-11-02T14:32:47Z",
+    "as_of": "2026-11-02T14:37:43Z",
     "delay": "near real-time (lag 0s)",
-    "price": 694.61,
+    "price": 694.2,
     "stale": false
    },
    "SPY": {
-    "as_of": "2026-11-02T14:32:47Z",
-    "delay": "near real-time (lag 0s)",
-    "price": 759.32,
+    "as_of": "2026-11-02T14:37:42Z",
+    "delay": "near real-time (lag 1s)",
+    "price": 759.16,
     "stale": false
    },
    "TSLA": {
-    "as_of": "2026-11-02T14:32:47Z",
+    "as_of": "2026-11-02T14:37:43Z",
     "delay": "near real-time (lag 0s)",
-    "price": 408.3,
+    "price": 408.86,
     "stale": false
    }
   },
-  "day_pnl": -0.0,
+  "day_pnl": 6.15,
   "message": "Scanned 11 symbols with tjr_exact, liquidity_reversal, orb15_v1.",
   "notes": [],
-  "ny_time": "2026-11-02 09:32 EST",
+  "ny_time": "2026-11-02 09:37 EST",
   "risk_pct_now": 0.02,
   "signals": {
    "AAPL": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
