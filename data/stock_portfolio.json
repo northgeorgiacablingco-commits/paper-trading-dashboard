@@ -1,6 +1,6 @@
 {
  "account": "stock_paper",
- "cash": 10150.58,
+ "cash": 10273.78,
  "closed": [
   {
    "R": -1.03,
@@ -1301,6 +1301,35 @@
    "strategy": "orb15_v1",
    "sym": "QQQ",
    "target": 642.41
+  },
+  {
+   "R": 1.14,
+   "closed": "2026-11-05T15:57:49Z",
+   "entry": 281.01,
+   "entry_data": {
+    "as_of": "2026-11-05T14:50:31Z",
+    "delay": "near real-time (lag 11s)",
+    "signal_bar": "2026-11-05T14:45:00Z",
+    "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
+   },
+   "entry_reason": "ORB15 short: 5m close 280.77 < OR low 281.46 (OR 281.46-284.70, width 1.15%), below VWAP 283.04 and prior close 283.98; stop 284.70 = OR high (dist 3.93; ATR14 0.61) [stop_mode=or_far]",
+   "exit": 276.28,
+   "exit_data": {
+    "as_of": "2026-11-05T15:57:49Z",
+    "delay": "near real-time (lag 0s)",
+    "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
+   },
+   "exit_reason": "stop (live price)",
+   "opened": "2026-11-05T14:50:42Z",
+   "pnl": 213.97,
+   "qty0": 51,
+   "risk0": 188.0,
+   "side": "short",
+   "stop0": 284.7,
+   "stop_mode": "or_far",
+   "strategy": "orb15_v1",
+   "sym": "IWM",
+   "target": 273.64
   }
  ],
  "created": "2026-10-20T21:51:39Z",
@@ -1337,7 +1366,7 @@
    "tjr:SPY:long:norev"
   ],
   "losses": 0,
-  "realized": 423.85,
+  "realized": 547.05,
   "start_eq": 9726.73,
   "strat": {
    "liquidity_reversal": {
@@ -1364,48 +1393,12 @@
    "orb:MSFT:short"
   ]
  },
- "equity": 10400.72,
+ "equity": 10330.56,
  "note": "Simulated only. No broker, no real money. Never reset (NO-RESET RULE).",
  "open": [
   {
-   "atr": 0.6175079345703125,
-   "best": 275.989990234375,
-   "entry": 281.013786,
-   "entry_data": {
-    "as_of": "2026-11-05T14:50:31Z",
-    "delay": "near real-time (lag 11s)",
-    "signal_bar": "2026-11-05T14:45:00Z",
-    "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
-   },
-   "flat_by": null,
-   "half": true,
-   "last": 274.86,
-   "last_data": {
-    "as_of": "2026-11-05T15:52:45Z",
-    "delay": "near real-time (lag 0s)",
-    "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
-   },
-   "opened": "2026-11-05T14:50:42Z",
-   "qty": 26,
-   "qty0": 51,
-   "realized": 90.77,
-   "reason": "ORB15 short: 5m close 280.77 < OR low 281.46 (OR 281.46-284.70, width 1.15%), below VWAP 283.04 and prior close 283.98; stop 284.70 = OR high (dist 3.93; ATR14 0.61) [stop_mode=or_far]",
-   "risk0": 188.0,
-   "risk_ps": 3.686226207031268,
-   "seen": 1793893800,
-   "side": "short",
-   "stop": 276.6074981689453,
-   "stop0": 284.70001220703125,
-   "stop_mode": "or_far",
-   "strategy": "orb15_v1",
-   "sym": "IWM",
-   "target": 273.64133358593745,
-   "tp1": null,
-   "trail": true
-  },
-  {
    "atr": 3.2483084542410716,
-   "best": 536.5701293945312,
+   "best": 532.836181640625,
    "entry": 541.411696,
    "entry_data": {
     "as_of": "2026-11-05T15:32:48Z",
@@ -1414,9 +1407,9 @@
     "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
    },
    "flat_by": null,
-   "last": 533.9,
+   "last": 536.68,
    "last_data": {
-    "as_of": "2026-11-05T15:52:44Z",
+    "as_of": "2026-11-05T15:57:49Z",
     "delay": "near real-time (lag 0s)",
     "source": "Yahoo Finance chart API v8 (query1.finance.yahoo.com), 5m bars (+pre/post for levels; 1m for SPY/QQQ TJR entries)"
    },
@@ -1426,7 +1419,7 @@
    "reason": "ORB15 short: 5m close 541.14 < OR low 547.57 (OR 547.57-557.62, width 1.86%), below VWAP 545.61 and prior close 556.03; stop 557.62 = OR high (dist 16.48; ATR14 3.33) [stop_mode=or_far]",
    "risk0": 194.5,
    "risk_ps": 16.208299117187494,
-   "seen": 1793893800,
+   "seen": 1793894100,
    "side": "short",
    "stop": 557.6199951171875,
    "stop0": 557.6199951171875,
@@ -1534,12 +1527,12 @@
    "wins": 0
   },
   "orb15_v1": {
-   "avg_R": 0.014,
-   "pnl": 353.15,
-   "profit_factor": 1.21,
-   "trades": 43,
-   "win_rate": 0.488,
-   "wins": 21
+   "avg_R": 0.04,
+   "pnl": 567.12,
+   "profit_factor": 1.33,
+   "trades": 44,
+   "win_rate": 0.5,
+   "wins": 22
   },
   "tjr_exact": {
    "avg_R": -1.1,
@@ -1552,81 +1545,81 @@
  },
  "status": {
   "blocks": [
-   "profit lock hit (+673.99 >= +$600)"
+   "profit lock hit (+603.83 >= +$600)"
   ],
-  "checked_at": "2026-11-05T15:52:44Z",
+  "checked_at": "2026-11-05T15:57:49Z",
   "data": {
    "AAPL": {
-    "as_of": "2026-11-05T15:52:44Z",
-    "delay": "near real-time (lag 0s)",
-    "price": 346.07,
+    "as_of": "2026-11-05T15:57:48Z",
+    "delay": "near real-time (lag 1s)",
+    "price": 348.24,
     "stale": false
    },
    "AMD": {
-    "as_of": "2026-11-05T15:52:44Z",
-    "delay": "near real-time (lag 0s)",
-    "price": 405.5,
+    "as_of": "2026-11-05T15:57:48Z",
+    "delay": "near real-time (lag 1s)",
+    "price": 412.57,
     "stale": false
    },
    "AMZN": {
-    "as_of": "2026-11-05T15:52:44Z",
+    "as_of": "2026-11-05T15:57:49Z",
     "delay": "near real-time (lag 0s)",
-    "price": 252.88,
+    "price": 254.56,
     "stale": false
    },
    "GOOGL": {
-    "as_of": "2026-11-05T15:52:45Z",
+    "as_of": "2026-11-05T15:57:49Z",
     "delay": "near real-time (lag 0s)",
-    "price": 277.56,
+    "price": 280.36,
     "stale": false
    },
    "IWM": {
-    "as_of": "2026-11-05T15:52:45Z",
+    "as_of": "2026-11-05T15:57:49Z",
     "delay": "near real-time (lag 0s)",
-    "price": 274.86,
+    "price": 276.22,
     "stale": false
    },
    "META": {
-    "as_of": "2026-11-05T15:52:45Z",
-    "delay": "near real-time (lag 0s)",
-    "price": 585.86,
+    "as_of": "2026-11-05T15:57:48Z",
+    "delay": "near real-time (lag 1s)",
+    "price": 593.26,
     "stale": false
    },
    "MSFT": {
-    "as_of": "2026-11-05T15:52:44Z",
+    "as_of": "2026-11-05T15:57:49Z",
     "delay": "near real-time (lag 0s)",
-    "price": 533.9,
+    "price": 536.68,
     "stale": false
    },
    "NVDA": {
-    "as_of": "2026-11-05T15:52:45Z",
+    "as_of": "2026-11-05T15:57:50Z",
     "delay": "near real-time (lag 0s)",
-    "price": 182.22,
+    "price": 183.66,
     "stale": false
    },
    "QQQ": {
-    "as_of": "2026-11-05T15:52:45Z",
+    "as_of": "2026-11-05T15:57:50Z",
     "delay": "near real-time (lag 0s)",
-    "price": 648.94,
+    "price": 653.68,
     "stale": false
    },
    "SPY": {
-    "as_of": "2026-11-05T15:52:46Z",
-    "delay": "near real-time (lag -1s)",
-    "price": 738.32,
+    "as_of": "2026-11-05T15:57:50Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 742.08,
     "stale": false
    },
    "TSLA": {
-    "as_of": "2026-11-05T15:52:45Z",
+    "as_of": "2026-11-05T15:57:49Z",
     "delay": "near real-time (lag 0s)",
-    "price": 341.9,
+    "price": 344.7,
     "stale": false
    }
   },
-  "day_pnl": 673.99,
-  "message": "Blocked: profit lock hit (+673.99 >= +$600)",
+  "day_pnl": 603.83,
+  "message": "Blocked: profit lock hit (+603.83 >= +$600)",
   "notes": [],
-  "ny_time": "2026-11-05 10:52 EST",
+  "ny_time": "2026-11-05 10:57 EST",
   "risk_pct_now": 0.02,
   "signals": {},
   "state": "market_open"
