@@ -409,3 +409,6 @@ time,strategy,sym,event,key,reason
 2026-11-11T15:02:52Z,liquidity_reversal,SPY,SKIP,lr:SPY:ONH:1794407400:nopb,"LR short: SPY rejected ONH at 09:30, no valid pullback entry in 3 bars"
 2026-11-11T15:02:52Z,orb15_v1,AAPL,SKIP,orb:AAPL:long:AAPL already has an open,"signal skipped: AAPL already has an open position | ORB15 long: 5m close 353.60 > OR high 353.43 (OR 349.33-353.43, width 1.16%), above VWAP 352.59 and prior close 348.63; stop 349.33 = OR low (dist 4.27; ATR14 1.13) [stop_mode=or_far]"
 2026-11-11T15:02:52Z,orb15_v1,MSFT,SKIP,orb:MSFT:short:size 0 after risk/notion,"signal skipped: size 0 after risk/notional caps | ORB15 short: 5m close 528.27 < OR low 529.20 (OR 529.20-534.76, width 1.05%), below VWAP 531.42 and prior close 533.42; stop 534.76 = OR high (dist 6.49; ATR14 2.04) [stop_mode=or_far]"
+2026-11-11T15:13:57Z,tjr_exact,SPY,SKIP,tjr:SPY:long:norev,TJR long: SPY swept 1hL 08:00 755.96 at 09:35 but no 5m BOS/IFVG on SPY by 10:10
+2026-11-11T15:13:57Z,tjr_exact,QQQ,SKIP,tjr:QQQ:short:noentry,TJR short: aligned reversal 09:40 on QQQ but no 1m entry BOS 09:50-10:10
+2026-11-11T15:13:57Z,tjr_exact,QQQ,SKIP,tjr:QQQ:long:norev,TJR long: SPY swept 1hL 08:00 755.96 at 09:35 but no 5m BOS/IFVG on QQQ by 10:10
