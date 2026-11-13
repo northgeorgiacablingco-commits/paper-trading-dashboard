@@ -1948,8 +1948,21 @@
   "logged": [],
   "losses": 0,
   "realized": 0.0,
-  "start_eq": null,
-  "strat": {},
+  "start_eq": 9640.49,
+  "strat": {
+   "liquidity_reversal": {
+    "entries": 0,
+    "losses": 0
+   },
+   "orb15_v1": {
+    "entries": 0,
+    "losses": 0
+   },
+   "tjr_exact": {
+    "entries": 0,
+    "losses": 0
+   }
+  },
   "traded": []
  },
  "equity": 9640.49,
@@ -2068,10 +2081,95 @@
   }
  },
  "status": {
-  "checked_at": "2026-11-13T05:02:45Z",
-  "message": "Market closed (before 9:30 ET). No trades. Open positions: 0.",
-  "ny_time": "2026-11-13 00:02 EST",
-  "state": "market_closed"
+  "blocks": [],
+  "checked_at": "2026-11-13T14:37:14Z",
+  "data": {
+   "AAPL": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 359.66,
+    "stale": false
+   },
+   "AMD": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 557.99,
+    "stale": false
+   },
+   "AMZN": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 268.97,
+    "stale": false
+   },
+   "GOOGL": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 303.19,
+    "stale": false
+   },
+   "IWM": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 277.75,
+    "stale": false
+   },
+   "META": {
+    "as_of": "2026-11-13T14:37:15Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 630.38,
+    "stale": false
+   },
+   "MSFT": {
+    "as_of": "2026-11-13T14:37:13Z",
+    "delay": "near real-time (lag 1s)",
+    "price": 517.54,
+    "stale": false
+   },
+   "NVDA": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 163.86,
+    "stale": false
+   },
+   "QQQ": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 685.02,
+    "stale": false
+   },
+   "SPY": {
+    "as_of": "2026-11-13T14:37:14Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 756.94,
+    "stale": false
+   },
+   "TSLA": {
+    "as_of": "2026-11-13T14:37:15Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 393.03,
+    "stale": false
+   }
+  },
+  "day_pnl": 0.0,
+  "message": "Scanned 11 symbols with tjr_exact, liquidity_reversal, orb15_v1.",
+  "notes": [],
+  "ny_time": "2026-11-13 09:37 EST",
+  "risk_pct_now": 0.02,
+  "signals": {
+   "AAPL": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "AMD": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "AMZN": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "GOOGL": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "IWM": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "META": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "MSFT": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "NVDA": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "QQQ": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "SPY": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)",
+   "TSLA": "opening range not complete (needs 3 closed 5m bars 9:30-9:45)"
+  },
+  "state": "market_open"
  },
  "version": "stock_bot v2 (orb15_v1 + tjr_exact + liquidity_reversal)"
 }
