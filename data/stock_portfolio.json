@@ -2264,11 +2264,37 @@
  "day": {
   "date": "2026-11-20",
   "entries": 0,
-  "logged": [],
+  "logged": [
+   "lr:QQQ:ONL:1795188000:nopb",
+   "orb:AAPL:short:no new ORB entries after",
+   "orb:AMZN:short:no new ORB entries after",
+   "orb:GOOGL:short:no new ORB entries after",
+   "orb:IWM:short:no new ORB entries after",
+   "orb:META:short:no new ORB entries after",
+   "orb:MSFT:short:no new ORB entries after",
+   "orb:QQQ:short:no new ORB entries after",
+   "orb:SPY:short:no new ORB entries after",
+   "orb:TSLA:short:no new ORB entries after",
+   "tjr:QQQ:short:smt",
+   "tjr:SPY:short:norev"
+  ],
   "losses": 0,
   "realized": 0.0,
-  "start_eq": null,
-  "strat": {},
+  "start_eq": 9466.55,
+  "strat": {
+   "liquidity_reversal": {
+    "entries": 0,
+    "losses": 0
+   },
+   "orb15_v1": {
+    "entries": 0,
+    "losses": 0
+   },
+   "tjr_exact": {
+    "entries": 0,
+    "losses": 0
+   }
+  },
   "traded": []
  },
  "equity": 9466.55,
@@ -2387,10 +2413,97 @@
   }
  },
  "status": {
-  "checked_at": "2026-11-20T12:43:52Z",
-  "message": "Market closed (before 9:30 ET). No trades. Open positions: 0.",
-  "ny_time": "2026-11-20 07:43 EST",
-  "state": "market_closed"
+  "blocks": [
+   "no new ORB entries after 15:30 ET"
+  ],
+  "checked_at": "2026-11-20T20:44:38Z",
+  "data": {
+   "AAPL": {
+    "as_of": "2026-11-20T20:44:36Z",
+    "delay": "near real-time (lag 2s)",
+    "price": 343.07,
+    "stale": false
+   },
+   "AMD": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 423.8,
+    "stale": false
+   },
+   "AMZN": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 246.28,
+    "stale": false
+   },
+   "GOOGL": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 266.06,
+    "stale": false
+   },
+   "IWM": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 257.28,
+    "stale": false
+   },
+   "META": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 559.93,
+    "stale": false
+   },
+   "MSFT": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 483.74,
+    "stale": false
+   },
+   "NVDA": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 127.78,
+    "stale": false
+   },
+   "QQQ": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 610.24,
+    "stale": false
+   },
+   "SPY": {
+    "as_of": "2026-11-20T20:44:39Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 690.58,
+    "stale": false
+   },
+   "TSLA": {
+    "as_of": "2026-11-20T20:44:38Z",
+    "delay": "near real-time (lag 0s)",
+    "price": 345.42,
+    "stale": false
+   }
+  },
+  "day_pnl": 0.0,
+  "message": "Blocked: no new ORB entries after 15:30 ET",
+  "notes": [],
+  "ny_time": "2026-11-20 15:44 EST",
+  "risk_pct_now": 0.02,
+  "signals": {
+   "AAPL": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "AMD": "OR width 4.30% outside 0.15-3%",
+   "AMZN": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "GOOGL": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "IWM": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "META": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "MSFT": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "NVDA": "OR width 3.82% outside 0.15-3%",
+   "QQQ": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "SPY": "orb15_v1: skipped (no new ORB entries after 15:30 ET)",
+   "TSLA": "orb15_v1: skipped (no new ORB entries after 15:30 ET)"
+  },
+  "state": "market_open"
  },
  "version": "stock_bot v2 (orb15_v1 + tjr_exact + liquidity_reversal)"
 }
